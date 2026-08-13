@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" fill="none">
+  <!-- Geometric "C" Arc -->
+  <path d="M 28 11.5 A 13 13 0 1 0 28 28.5" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" />
+  <!-- Verification Mark -->
+  <path d="M 16 20.5 L 20 24.5 L 28 15" stroke="#3B82F6" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
