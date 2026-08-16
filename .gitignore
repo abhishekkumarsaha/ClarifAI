@@ -33,3 +33,9 @@ Thumbs.db
 
 # Vercel
 .vercel/
+
+# Large training datasets
+data/Fake.csv
+data/True.csv
+data/cleaned_news.csv
+data/processed_news.csv
