@@ -1,5 +1,5 @@
-from predict import predict_news, clean_text
-from explain import explain_prediction
+from .predict import predict_news, clean_text
+from .explain import explain_prediction
 
 
 def analyze_news(title, article):

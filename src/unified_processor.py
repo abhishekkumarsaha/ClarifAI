@@ -13,8 +13,7 @@ SRC_DIR = os.path.join(BASE_DIR, "src")
 if SRC_DIR not in sys.path:
     sys.path.append(SRC_DIR)
 
-from clarifai_engine import analyze_news
-
+from src.clarifai_engine import analyze_news
 
 def extract_url_content(url):
     """
