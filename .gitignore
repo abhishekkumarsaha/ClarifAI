@@ -3,32 +3,33 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# Virtual environments
+# Virtual environment
 .venv/
 venv/
 env/
 
-# Environment variables / secrets
+# Environment secrets
 .env
-*.env
+.env.*
+!.env.example
 
-# Jupyter Notebook
-.ipynb_checkpoints/
+# Streamlit
+.streamlit/secrets.toml
 
-# IDE / local tools
+# IDE
 .vscode/
 .idea/
-.qodo/
 
-# Dataset files
-data/*.csv
-data/*.zip
-data/*.json
-
-# Trained models
-models/*.pkl
-models/*.joblib
-
-# Operating system files
+# OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+
+# Test/cache
+.pytest_cache/
+.mypy_cache/
+
+# Vercel
+.vercel/
