@@ -1,0 +1,243 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-[#F8F9FA] text-[#111827] font-sans antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  }
+
+  html.dark {
+    @apply bg-[#080808] text-white;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    @apply bg-gradient-to-br from-[#F8F9FA] via-[#F1F3F5] to-[#E9ECEF] dark:from-[#080808] dark:via-[#0D0D0D] dark:to-[#050505] text-[#111827] dark:text-white font-sans antialiased min-h-screen transition-colors duration-300;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    letter-spacing: -0.025em;
+  }
+}
+
+/* ============================================================
+   CINEMATIC 3D LIQUID INTELLIGENCE ATMOSPHERE & MOTION
+   ============================================================ */
+
+/* Atmospheric Ambient Glowing Light Volumes */
+.cinematic-glow-cyan {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(0, 194, 255, 0.12) 0%, rgba(0, 194, 255, 0) 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  animation: mistFloat 16s ease-in-out infinite alternate;
+}
+
+.cinematic-glow-emerald {
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(29, 185, 84, 0.1) 0%, rgba(29, 185, 84, 0) 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  animation: mistFloat 20s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes mistFloat {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, -30px) scale(1.1);
+  }
+  100% {
+    transform: translate(-30px, 40px) scale(0.95);
+  }
+}
+
+/* ON AIR FLOATING INSTRUMENT TILE (With Inset Liquid Specular Shadows) */
+.glass-on-air {
+  @apply relative overflow-hidden bg-white/95 dark:bg-[#141414]/95 backdrop-blur-2xl border border-black/15 dark:border-white/20 rounded-3xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer;
+  box-shadow: 
+    0 0 6px rgba(0,0,0,0.03),
+    0 4px 16px rgba(0,0,0,0.08),
+    inset 3px 3px 0.5px -3.5px rgba(255,255,255,0.15),
+    inset -3px -3px 0.5px -3.5px rgba(255,255,255,0.85),
+    inset 1px 1px 1px -0.5px rgba(255,255,255,0.6),
+    inset -1px -1px 1px -0.5px rgba(255,255,255,0.6),
+    inset 0 0 6px 6px rgba(255,255,255,0.08),
+    0 12px 36px rgba(0,0,0,0.08);
+}
+
+.dark .glass-on-air {
+  box-shadow: 
+    0 0 8px rgba(0,0,0,0.4),
+    0 8px 24px rgba(0,0,0,0.6),
+    inset 2px 2px 1px -1px rgba(255,255,255,0.15),
+    inset -2px -2px 1px -1px rgba(255,255,255,0.05),
+    0 16px 48px rgba(0,0,0,0.6);
+}
+
+.glass-on-air:hover {
+  @apply border-[#1DB954]/70 dark:border-[#1DB954]/70 -translate-y-1 scale-[1.008];
+}
+
+.glass-on-air:active {
+  @apply scale-[0.98] translate-y-0;
+}
+
+/* CONTENT GLASS (Cards, Results, Help Pipeline) */
+.glass-content {
+  @apply relative overflow-hidden bg-white/95 dark:bg-[#141414]/95 backdrop-blur-xl border border-black/15 dark:border-white/20 rounded-3xl transition-all duration-300;
+  box-shadow: 
+    0 2px 8px rgba(0,0,0,0.06),
+    inset 2px 2px 0.5px -2px rgba(255,255,255,0.2),
+    inset -2px -2px 0.5px -2px rgba(255,255,255,0.6);
+}
+
+.dark .glass-content {
+  box-shadow: 
+    0 4px 16px rgba(0,0,0,0.4),
+    inset 1px 1px 1px -1px rgba(255,255,255,0.1);
+}
+
+.glass-content-hover {
+  @apply hover:shadow-2xl hover:border-[#1DB954]/60 dark:hover:border-[#1DB954]/60 hover:-translate-y-1 hover:scale-[1.005] cursor-pointer;
+}
+
+/* PRIMARY INTERACTIVE BUTTONS & CONTROLS */
+.glass-interactive {
+  @apply relative overflow-hidden bg-white/90 dark:bg-[#161616]/90 backdrop-blur-2xl border border-black/15 dark:border-white/20 rounded-2xl transition-all duration-200 ease-out cursor-pointer;
+  box-shadow: 
+    0 2px 6px rgba(0,0,0,0.06),
+    inset 2px 2px 0.5px -2px rgba(255,255,255,0.2),
+    inset -2px -2px 0.5px -2px rgba(255,255,255,0.6);
+}
+
+.dark .glass-interactive {
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.4),
+    inset 1px 1px 1px -1px rgba(255,255,255,0.12);
+}
+
+.glass-interactive:hover {
+  @apply border-[#1DB954]/70 -translate-y-0.5 scale-[1.01] shadow-xl;
+}
+
+.glass-interactive:active {
+  @apply scale-[0.97] translate-y-0;
+}
+
+/* LIQUID GLASS RANGE SLIDER SYSTEM */
+input[type="range"].glass-slider {
+  @apply appearance-none bg-black/10 dark:bg-white/10 h-3 rounded-full outline-none transition-all cursor-pointer;
+}
+
+input[type="range"].glass-slider::-webkit-slider-thumb {
+  @apply appearance-none w-6 h-6 rounded-full bg-white dark:bg-[#1A1A1A] border-2 border-[#1DB954] shadow-lg cursor-pointer transition-transform duration-200 hover:scale-125 active:scale-95;
+  box-shadow: 
+    0 2px 8px rgba(0,194,255,0.4),
+    inset 1px 1px 1px rgba(255,255,255,0.8);
+}
+
+/* ============================================================
+   HELP MODULE EXCLUSIVE TEXT SHIMMER & ISOLATED HOVER
+   ============================================================ */
+
+.help-card-static {
+  @apply relative overflow-hidden bg-white/95 dark:bg-[#141414]/95 backdrop-blur-xl border border-black/15 dark:border-white/20 shadow-md rounded-2xl transition-all duration-300;
+}
+
+.help-card-interactive {
+  @apply relative overflow-hidden bg-white/95 dark:bg-[#141414]/95 backdrop-blur-xl border border-black/15 dark:border-white/20 shadow-md rounded-2xl transition-all duration-300 cursor-pointer;
+}
+
+.help-card-interactive:hover {
+  @apply border-[#1DB954]/70 dark:border-[#1DB954]/70 -translate-y-1 shadow-xl;
+}
+
+/* Text Shimmer Effect - ONLY triggered on the specific hovered card */
+.help-card-interactive:hover .help-text-shine {
+  background: linear-gradient(90deg, #111827 0%, #1DB954 50%, #111827 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shineText 1.5s linear infinite;
+}
+
+.dark .help-card-interactive:hover .help-text-shine {
+  background: linear-gradient(90deg, #FFFFFF 0%, #00C2FF 50%, #FFFFFF 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shineText 1.5s linear infinite;
+}
+
+@keyframes shineText {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* High Contrast Text Hierarchy */
+.text-primary {
+  @apply text-[#111827] dark:text-white font-bold;
+}
+
+.text-secondary {
+  @apply text-[#475569] dark:text-[#A7A7A7];
+}
+
+.text-muted {
+  @apply text-[#64748B] dark:text-[#666666];
+}
+
+/* Print Optimization */
+@media print {
+  aside, header, footer, button, .no-print {
+    display: none !important;
+  }
+  main {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .print-area {
+    display: block !important;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #222222;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #333333;
+}
