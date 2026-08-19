@@ -1,6 +1,11 @@
-// Web Audio API Glass Chime & Haptic Sound Synthesizer for ClarifAI Premium UI
+// Web Audio API Glass Chime & Sound Synthesizer for ClarifAI
 
 let audioCtx: AudioContext | null = null;
+
+const isSoundEnabled = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  return localStorage.getItem('clarifai_sound_enabled') !== 'false';
+};
 
 const getAudioContext = (): AudioContext | null => {
   if (typeof window === 'undefined') return null;
@@ -17,6 +22,7 @@ const getAudioContext = (): AudioContext | null => {
 };
 
 export const playGlassClickSound = () => {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -37,11 +43,12 @@ export const playGlassClickSound = () => {
     osc.start();
     osc.stop(ctx.currentTime + 0.04);
   } catch (e) {
-    // Ignore audio autoplay restrictions gracefully
+    // Ignore audio restrictions
   }
 };
 
 export const playSuccessChime = () => {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;

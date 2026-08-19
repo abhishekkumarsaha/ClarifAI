@@ -446,82 +446,66 @@ def _call_openrouter(
     strict=False,
 ):
     """
-    Call OpenRouter.
-
-    strict=True uses an even stronger JSON instruction.
+    Call OpenRouter and request a strict JSON response.
     """
 
     system_message = """
-You are ClarifAI's evidence-grounded
-news verification engine.
+You are ClarifAI's evidence-grounded news verification engine.
 
-You MUST return ONLY a valid JSON object.
+Return ONLY one valid JSON object.
 
-No markdown.
-No code fences.
-No commentary before or after JSON.
+Rules:
+- No markdown.
+- No code fences.
+- No commentary.
+- No text before JSON.
+- No text after JSON.
+- All strings must use valid JSON escaping.
+- Do not invent evidence.
+- Use only the supplied evidence.
 """
 
     if strict:
-
         system_message += """
-Your previous response was not valid JSON.
+IMPORTANT:
+The previous response was invalid JSON.
 
-This time return a syntactically valid JSON object
-and absolutely nothing else.
+You MUST return syntactically valid JSON.
+Double-check commas, quotes, brackets, and escaping
+before responding.
 """
 
     payload = {
-
-        "model":
-            model,
-
+        "model": model,
         "messages": [
-
             {
-                "role":
-                    "system",
-
-                "content":
-                    system_message,
+                "role": "system",
+                "content": system_message,
             },
-
             {
-                "role":
-                    "user",
-
-                "content":
-                    prompt,
+                "role": "user",
+                "content": prompt,
             },
         ],
+        "temperature": 0.0,
+        "max_tokens": 1800,
 
-        "temperature":
-            0.0,
-
-        "max_tokens":
-            1800,
+        # Important: request structured JSON when
+        # the selected OpenRouter model supports it.
+        "response_format": {
+            "type": "json_object"
+        },
     }
 
     response = requests.post(
-
         OPENROUTER_URL,
-
         headers={
-            "Authorization":
-                f"Bearer {api_key}",
-
-            "Content-Type":
-                "application/json",
-
-            "HTTP-Referer":
-                "http://localhost:8501",
-
-            "X-Title":
-                "ClarifAI",
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:5173",
+            "X-Title": "ClarifAI",
         },
-
         json=payload,
-
         timeout=60,
     )
 
@@ -529,28 +513,31 @@ and absolutely nothing else.
 
     data = response.json()
 
-    choices = data.get(
-        "choices",
-        [],
-    )
+    choices = data.get("choices", [])
 
     if not choices:
-
         raise RuntimeError(
             "OpenRouter returned no choices."
         )
 
-    message = choices[0].get(
-        "message",
-        {},
-    )
+    message = choices[0].get("message", {})
 
-    content = message.get(
-        "content",
-        "",
-    )
+    content = message.get("content", "")
 
-    return content
+    if isinstance(content, list):
+        content = "".join(
+            str(part.get("text", ""))
+            if isinstance(part, dict)
+            else str(part)
+            for part in content
+        )
+
+    if not content:
+        raise RuntimeError(
+            "OpenRouter returned empty content."
+        )
+
+    return str(content).strip()
 
 
 # ============================================================

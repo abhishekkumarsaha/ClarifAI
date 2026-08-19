@@ -1,22 +1,19 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useMemo, useState } from 'react';
 import {
-  History as HistoryIcon,
-  Trash2,
-  Download,
-  RotateCcw,
-  Bookmark,
-  BookmarkCheck,
   Search,
-  SlidersHorizontal,
+  Trash2,
+  RotateCcw,
+  ExternalLink,
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  FileText,
-  List,
-  GitCommit,
+  Clock3,
+  Database,
+  X,
 } from 'lucide-react';
+
 import { useApp } from '../context/AppContext';
+import { HistoryItem } from '../types';
 import { playGlassClickSound } from '../utils/audio';
 
 export const HistoryPage: React.FC = () => {
@@ -24,351 +21,559 @@ export const HistoryPage: React.FC = () => {
     history,
     deleteHistoryItem,
     clearHistory,
+    setClaimInput,
     setCurrentResult,
     setActiveNav,
-    savedItems,
-    toggleSaveItem,
+    showToast,
   } = useApp();
 
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [filterVerdict, setFilterVerdict] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
-  const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<
+    'ALL' | 'LIKELY_TRUE' | 'LIKELY_FALSE' | 'UNVERIFIED'
+  >('ALL');
 
-  const filteredHistory = history.filter((item) => {
-    const matchesSearch = item.claim.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesVerdict = filterVerdict === 'all' || item.verdict === filterVerdict;
-    return matchesSearch && matchesVerdict;
-  });
+  const [selectedItem, setSelectedItem] =
+    useState<HistoryItem | null>(null);
 
-  const handleRestore = (item: any) => {
+  const filteredHistory = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return history.filter((item) => {
+      const matchesSearch =
+        !query ||
+        item.claim.toLowerCase().includes(query) ||
+        item.summary.toLowerCase().includes(query);
+
+      const matchesFilter =
+        filter === 'ALL' ||
+        item.verdict === filter;
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [history, search, filter]);
+
+  const getVerdictConfig = (verdict: string) => {
+    if (verdict === 'LIKELY_TRUE') {
+      return {
+        label: 'LIKELY TRUE',
+        icon: CheckCircle2,
+        className:
+          'text-[#1DB954] bg-[#1DB954]/10 border-[#1DB954]/30',
+      };
+    }
+
+    if (verdict === 'LIKELY_FALSE') {
+      return {
+        label: 'LIKELY FALSE',
+        icon: AlertCircle,
+        className:
+          'text-[#FF4D5A] bg-[#FF4D5A]/10 border-[#FF4D5A]/30',
+      };
+    }
+
+    return {
+      label: 'UNVERIFIED',
+      icon: HelpCircle,
+      className:
+        'text-[#F5B942] bg-[#F5B942]/10 border-[#F5B942]/30',
+    };
+  };
+
+  const handleOpenResult = (item: HistoryItem) => {
     playGlassClickSound();
+
+    setClaimInput(item.claim);
     setCurrentResult(item.full_result);
     setActiveNav('verify');
+
+    showToast('Previous verification restored');
   };
 
-  const handleExportSingleJSON = (item: any) => {
+  const handleDelete = (
+    event: React.MouseEvent,
+    id: string,
+  ) => {
+    event.stopPropagation();
+
     playGlassClickSound();
-    const jsonStr = JSON.stringify(item.full_result, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `clarifai_scan_${item.id}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    deleteHistoryItem(id);
   };
 
-  const handleExportSingleCSV = (item: any) => {
-    playGlassClickSound();
-    const res = item.full_result;
-    const csvRows = [
-      ['Field', 'Value'],
-      ['Claim', `"${res.claim.replace(/"/g, '""')}"`],
-      ['Verdict', res.verdict],
-      ['Confidence', res.confidence],
-      ['Confidence Level', res.confidence_level],
-      ['Summary', `"${(res.summary || '').replace(/"/g, '""')}"`],
-      ['Articles Found', res.articles_found || 0],
-    ];
+  const handleClearHistory = () => {
+    if (!history.length) return;
 
-    const csvContent = csvRows.map((e) => e.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `clarifai_scan_${item.id}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    playGlassClickSound();
+
+    const confirmed = window.confirm(
+      'Clear all ClarifAI verification history?',
+    );
+
+    if (!confirmed) return;
+
+    clearHistory();
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 animate-in fade-in duration-200">
+
+      {/* HEADER */}
+
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#111827] dark:text-white">
-            Analysis History
-          </h1>
-          <p className="text-sm text-[#475569] dark:text-[#A7A7A7] mt-1">
-            Review past claim verifications, export records, or restore analysis sessions.
-          </p>
-        </div>
-
-        {history.length > 0 && (
-          <div className="flex items-center gap-2">
-            {/* View Mode Segmented Switcher */}
-            <div className="flex items-center p-1 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/10 text-xs font-bold">
-              <button
-                onClick={() => {
-                  playGlassClickSound();
-                  setViewMode('list');
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  viewMode === 'list'
-                    ? 'bg-white dark:bg-[#1E1E1E] text-[#1DB954] shadow-sm'
-                    : 'text-[#475569] dark:text-[#A7A7A7]'
-                }`}
-              >
-                <List className="w-3.5 h-3.5" />
-                <span>List</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  playGlassClickSound();
-                  setViewMode('timeline');
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  viewMode === 'timeline'
-                    ? 'bg-white dark:bg-[#1E1E1E] text-[#00C2FF] shadow-sm'
-                    : 'text-[#475569] dark:text-[#A7A7A7]'
-                }`}
-              >
-                <GitCommit className="w-3.5 h-3.5" />
-                <span>Timeline</span>
-              </button>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-7 h-7 rounded-xl bg-[#00C2FF]/10 border border-[#00C2FF]/30 flex items-center justify-center">
+              <Clock3 className="w-3.5 h-3.5 text-[#00C2FF]" />
             </div>
 
-            <button
-              onClick={() => {
-                playGlassClickSound();
-                setShowClearConfirm(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 glass-interactive rounded-xl text-xs font-bold text-[#FF4D5A]"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear History</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Filter & Search Bar */}
-      {history.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#475569] dark:text-[#A7A7A7]" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search history claims..."
-              className="w-full glass-interactive rounded-xl py-2.5 pl-10 pr-4 text-xs text-[#111827] dark:text-white placeholder-[#64748B] dark:placeholder-[#666666]"
-            />
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#00C2FF]">
+              Verification Archive
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-[#475569] dark:text-[#A7A7A7] glass-content px-3 py-2 rounded-xl w-full sm:w-auto">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#1DB954]" />
-            <span>Filter Verdict:</span>
-            <select
-              value={filterVerdict}
-              onChange={(e) => setFilterVerdict(e.target.value)}
-              className="bg-transparent text-[#111827] dark:text-white font-bold focus:outline-none cursor-pointer"
-            >
-              <option value="all" className="bg-white dark:bg-[#121212]">All Verdicts</option>
-              <option value="LIKELY_TRUE" className="bg-white dark:bg-[#121212]">Likely True</option>
-              <option value="LIKELY_FALSE" className="bg-white dark:bg-[#121212]">Likely False</option>
-              <option value="UNVERIFIED" className="bg-white dark:bg-[#121212]">Unverified</option>
-            </select>
-          </div>
-        </div>
-      )}
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#111827] dark:text-white">
+            History
+          </h1>
 
-      {/* History Items List / Timeline View */}
-      {filteredHistory.length > 0 ? (
-        viewMode === 'list' ? (
-          <div className="space-y-4">
-            {filteredHistory.map((item) => {
-              const isSaved = savedItems.has(item.claim);
-
-              return (
-                <div
-                  key={item.id}
-                  className="p-5 glass-content glass-content-hover rounded-3xl space-y-3 transition-all border border-black/15 dark:border-white/20"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/10 dark:border-white/10 pb-3">
-                    <div className="flex items-center gap-2 text-xs font-bold">
-                      {item.verdict === 'LIKELY_TRUE' && (
-                        <span className="text-[#1DB954] flex items-center gap-1">
-                          <CheckCircle2 className="w-4 h-4" /> LIKELY TRUE
-                        </span>
-                      )}
-                      {item.verdict === 'LIKELY_FALSE' && (
-                        <span className="text-[#FF4D5A] flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" /> LIKELY FALSE
-                        </span>
-                      )}
-                      {item.verdict === 'UNVERIFIED' && (
-                        <span className="text-[#F5B942] flex items-center gap-1">
-                          <HelpCircle className="w-4 h-4" /> UNVERIFIED
-                        </span>
-                      )}
-                      <span className="text-[#475569] dark:text-[#A7A7A7]">
-                        • {item.confidence.toFixed(1)}% Confidence ({item.confidence_level})
-                      </span>
-                    </div>
-
-                    <span className="text-xs text-[#64748B] dark:text-[#666666]">{item.timestamp}</span>
-                  </div>
-
-                  <div className="text-sm font-bold text-[#111827] dark:text-white leading-snug">
-                    "{item.claim}"
-                  </div>
-
-                  <div className="text-xs text-[#475569] dark:text-[#A7A7A7] line-clamp-2">
-                    {item.summary}
-                  </div>
-
-                  {/* Actions Bar */}
-                  <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleRestore(item)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1DB954] text-black font-bold text-xs rounded-xl shadow-md hover:bg-[#1ed760] transition-all cursor-pointer"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        <span>Open Workspace</span>
-                      </button>
-
-                      <button
-                        onClick={() => toggleSaveItem(item.claim)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 glass-interactive rounded-xl text-xs cursor-pointer"
-                      >
-                        {isSaved ? (
-                          <>
-                            <BookmarkCheck className="w-3.5 h-3.5 text-[#1DB954]" />
-                            <span className="text-[#1DB954]">Saved</span>
-                          </>
-                        ) : (
-                          <>
-                            <Bookmark className="w-3.5 h-3.5 text-[#475569] dark:text-[#A7A7A7]" />
-                            <span>Save</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleExportSingleJSON(item)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 glass-interactive rounded-xl text-xs text-[#00C2FF] cursor-pointer"
-                        title="Export JSON"
-                      >
-                        <Download className="w-3 h-3" />
-                        <span>JSON</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleExportSingleCSV(item)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 glass-interactive rounded-xl text-xs text-[#1DB954] cursor-pointer"
-                        title="Export CSV"
-                      >
-                        <FileText className="w-3 h-3" />
-                        <span>CSV</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          playGlassClickSound();
-                          deleteHistoryItem(item.id);
-                        }}
-                        className="p-1.5 text-[#FF4D5A] hover:bg-[#FF4D5A]/10 rounded-xl transition-colors cursor-pointer"
-                        title="Delete entry"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          /* TIMELINE NODE GRAPH VIEW */
-          <div className="relative pl-6 border-l-2 border-[#1DB954]/30 space-y-6">
-            {filteredHistory.map((item) => {
-              const isSaved = savedItems.has(item.claim);
-
-              return (
-                <div key={item.id} className="relative group">
-                  {/* Timeline Node Point */}
-                  <div className="absolute -left-[31px] top-4 w-4 h-4 rounded-full bg-[#1DB954] border-4 border-white dark:border-[#080808] shadow-[0_0_12px_rgba(29,185,84,0.6)] group-hover:scale-125 transition-transform" />
-
-                  <div className="p-5 glass-content glass-content-hover rounded-3xl space-y-3 border border-black/15 dark:border-white/20">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/10 dark:border-white/10 pb-2">
-                      <span className="text-xs font-bold text-[#00C2FF]">{item.timestamp}</span>
-                      <span className="text-xs font-bold text-[#1DB954]">{item.verdict} ({item.confidence.toFixed(0)}%)</span>
-                    </div>
-
-                    <h4 className="text-sm font-bold text-[#111827] dark:text-white">"{item.claim}"</h4>
-                    <p className="text-xs text-[#475569] dark:text-[#A7A7A7] line-clamp-2">{item.summary}</p>
-
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        onClick={() => handleRestore(item)}
-                        className="px-3 py-1 bg-[#1DB954] text-black font-bold text-xs rounded-xl shadow-sm hover:bg-[#1ed760] cursor-pointer"
-                      >
-                        Restore Session
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )
-      ) : (
-        <div className="p-12 glass-content rounded-3xl text-center space-y-3 shadow-xl border border-black/15 dark:border-white/20">
-          <HistoryIcon className="w-12 h-12 text-[#64748B] dark:text-[#666666] mx-auto" />
-          <h3 className="text-base font-bold text-[#111827] dark:text-white">No history records found</h3>
-          <p className="text-xs text-[#475569] dark:text-[#A7A7A7] max-w-sm mx-auto">
-            {searchTerm || filterVerdict !== 'all'
-              ? 'No verification records match your active search or filter criteria.'
-              : 'Verifications you perform will automatically be saved locally in your history.'}
+          <p className="text-sm text-[#475569] dark:text-[#A7A7A7] mt-1">
+            Review and restore your previous ClarifAI analyses.
           </p>
         </div>
+
+        <div className="flex items-center gap-2">
+
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00C2FF]/10 border border-[#00C2FF]/25 text-[#00C2FF] text-[10px] font-black">
+            <Database className="w-3 h-3" />
+            {history.length} RECORD
+            {history.length === 1 ? '' : 'S'}
+          </div>
+
+          {history.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearHistory}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-interactive border border-[#FF4D5A]/25 text-[#FF4D5A] text-[10px] font-bold cursor-pointer"
+            >
+              <Trash2 className="w-3 h-3" />
+              Clear
+            </button>
+          )}
+
+        </div>
+      </div>
+
+      {/* SEARCH + FILTER */}
+
+      <div className="glass-on-air rounded-3xl p-3 border border-black/15 dark:border-white/20 shadow-xl">
+
+        <div className="flex flex-col md:flex-row gap-3">
+
+          <div className="relative flex-1">
+
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+
+            <input
+              type="text"
+              value={search}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
+              placeholder="Search verification history..."
+              className="w-full h-10 pl-10 pr-9 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm text-[#111827] dark:text-white placeholder-[#64748B] focus:outline-none focus:border-[#00C2FF]/50"
+            />
+
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5 text-[#64748B]" />
+              </button>
+            )}
+
+          </div>
+
+          <div className="flex gap-1 overflow-x-auto">
+
+            {[
+              ['ALL', 'All'],
+              ['LIKELY_TRUE', 'True'],
+              ['LIKELY_FALSE', 'False'],
+              ['UNVERIFIED', 'Unverified'],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() =>
+                  setFilter(
+                    value as
+                    | 'ALL'
+                    | 'LIKELY_TRUE'
+                    | 'LIKELY_FALSE'
+                    | 'UNVERIFIED',
+                  )
+                }
+                className={`px-3 py-2 rounded-full text-[10px] font-bold whitespace-nowrap cursor-pointer transition-all ${filter === value
+                    ? 'bg-[#00C2FF]/15 text-[#00C2FF] border border-[#00C2FF]/30'
+                    : 'glass-interactive text-[#64748B] dark:text-[#A7A7A7]'
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
+
+          </div>
+        </div>
+      </div>
+
+      {/* EMPTY STATE */}
+
+      {history.length === 0 && (
+        <div className="glass-on-air rounded-3xl border border-black/15 dark:border-white/20 shadow-xl p-10 text-center">
+
+          <div className="w-16 h-16 mx-auto rounded-3xl bg-[#00C2FF]/10 border border-[#00C2FF]/25 flex items-center justify-center">
+            <Database className="w-7 h-7 text-[#00C2FF]" />
+          </div>
+
+          <h2 className="mt-5 text-lg font-bold text-[#111827] dark:text-white">
+            No verification history yet
+          </h2>
+
+          <p className="mt-2 max-w-md mx-auto text-sm text-[#64748B] dark:text-[#888888]">
+            Your completed news verifications will automatically
+            appear here.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              playGlassClickSound();
+              setActiveNav('verify');
+            }}
+            className="mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1DB954] text-black text-xs font-bold cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Start Verification
+          </button>
+
+        </div>
       )}
 
-      {/* Confirmation Dialog for Clearing History */}
-      <AnimatePresence>
-        {showClearConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-sm glass-on-air rounded-3xl p-6 space-y-4 shadow-2xl text-[#111827] dark:text-white"
-            >
-              <h4 className="text-lg font-bold">Clear Local History?</h4>
-              <p className="text-xs text-[#475569] dark:text-[#A7A7A7]">
-                This will delete all saved scan items from your browser local storage. This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    playGlassClickSound();
-                    setShowClearConfirm(false);
-                  }}
-                  className="px-4 py-2 text-xs font-bold glass-interactive rounded-xl cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    playGlassClickSound();
-                    clearHistory();
-                    setShowClearConfirm(false);
-                  }}
-                  className="px-4 py-2 text-xs font-bold bg-[#FF4D5A] text-white rounded-xl shadow-md hover:bg-[#e04350] cursor-pointer"
-                >
-                  Confirm Clear
-                </button>
-              </div>
-            </motion.div>
+      {/* NO SEARCH RESULTS */}
+
+      {history.length > 0 &&
+        filteredHistory.length === 0 && (
+          <div className="glass-on-air rounded-3xl border border-black/15 dark:border-white/20 p-10 text-center">
+
+            <Search className="w-8 h-8 mx-auto text-[#64748B]" />
+
+            <h2 className="mt-4 text-base font-bold text-[#111827] dark:text-white">
+              No matching analyses
+            </h2>
+
+            <p className="mt-1 text-xs text-[#64748B] dark:text-[#888888]">
+              Try another search term or filter.
+            </p>
+
           </div>
         )}
-      </AnimatePresence>
+
+      {/* HISTORY LIST */}
+
+      {filteredHistory.length > 0 && (
+        <div className="space-y-3">
+
+          {filteredHistory.map((item) => {
+
+            const config =
+              getVerdictConfig(item.verdict);
+
+            const VerdictIcon =
+              config.icon;
+
+            return (
+              <div
+                key={item.id}
+                onClick={() =>
+                  handleOpenResult(item)
+                }
+                className="group glass-on-air rounded-3xl border border-black/15 dark:border-white/20 shadow-lg p-4 md:p-5 cursor-pointer hover:border-[#00C2FF]/30 hover:shadow-xl transition-all"
+              >
+
+                <div className="flex flex-col md:flex-row md:items-start gap-4">
+
+                  {/* VERDICT */}
+
+                  <div
+                    className={`flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-black w-fit ${config.className}`}
+                  >
+                    <VerdictIcon className="w-3 h-3" />
+                    {config.label}
+                  </div>
+
+                  {/* CONTENT */}
+
+                  <div className="flex-1 min-w-0">
+
+                    <h3 className="text-sm md:text-base font-bold text-[#111827] dark:text-white leading-snug line-clamp-2 group-hover:text-[#00C2FF] transition-colors">
+                      {item.claim}
+                    </h3>
+
+                    {item.summary && (
+                      <p className="mt-2 text-xs text-[#475569] dark:text-[#A7A7A7] line-clamp-2 leading-relaxed">
+                        {item.summary}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-[#64748B] dark:text-[#777777]">
+
+                      <span className="flex items-center gap-1">
+                        <Clock3 className="w-3 h-3" />
+                        {item.date_obj} · {item.timestamp}
+                      </span>
+
+                      <span>
+                        Confidence:{' '}
+                        <strong className="text-[#111827] dark:text-white">
+                          {Number(
+                            item.confidence ?? 0,
+                          ).toFixed(0)}
+                          %
+                        </strong>
+                      </span>
+
+                      <span>
+                        Evidence:{' '}
+                        <strong className="text-[#111827] dark:text-white">
+                          {(item.supporting_count || 0) +
+                            (item.contradicting_count || 0)}
+                        </strong>
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                  {/* ACTIONS */}
+
+                  <div className="flex items-center gap-2 md:self-center">
+
+                    <button
+                      type="button"
+                      title="Restore analysis"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleOpenResult(item);
+                      }}
+                      className="p-2 rounded-full glass-interactive text-[#00C2FF] cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      title="Delete analysis"
+                      onClick={(event) =>
+                        handleDelete(
+                          event,
+                          item.id,
+                        )
+                      }
+                      className="p-2 rounded-full glass-interactive text-[#FF4D5A] cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+
+                  </div>
+
+                </div>
+              </div>
+            );
+          })}
+
+        </div>
+      )}
+
+      {/* DETAIL MODAL */}
+
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+
+          <div className="w-full max-w-2xl max-h-[85vh] overflow-y-auto glass-on-air rounded-3xl border border-black/15 dark:border-white/20 shadow-2xl p-6">
+
+            <div className="flex items-start justify-between gap-4">
+
+              <div>
+                <span
+                  className={`inline-flex px-2.5 py-1 rounded-full border text-[9px] font-black ${getVerdictConfig(
+                    selectedItem.verdict,
+                  ).className
+                    }`}
+                >
+                  {
+                    getVerdictConfig(
+                      selectedItem.verdict,
+                    ).label
+                  }
+                </span>
+
+                <h2 className="mt-3 text-lg font-bold text-[#111827] dark:text-white">
+                  {selectedItem.claim}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedItem(null)
+                }
+                className="p-2 rounded-full glass-interactive cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+            </div>
+
+            <div className="mt-5 p-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+
+              <div className="text-[10px] font-black uppercase tracking-wider text-[#00C2FF]">
+                Evidence Summary
+              </div>
+
+              <p className="mt-2 text-sm text-[#111827] dark:text-white leading-relaxed">
+                {selectedItem.summary ||
+                  'No summary available.'}
+              </p>
+
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+
+              <div className="p-3 rounded-2xl bg-black/5 dark:bg-white/5">
+                <div className="text-[9px] text-[#64748B]">
+                  Confidence
+                </div>
+                <div className="mt-1 text-lg font-black text-[#00C2FF]">
+                  {Number(
+                    selectedItem.confidence ?? 0,
+                  ).toFixed(0)}
+                  %
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-black/5 dark:bg-white/5">
+                <div className="text-[9px] text-[#64748B]">
+                  Confidence Level
+                </div>
+                <div className="mt-1 text-xs font-bold text-[#111827] dark:text-white">
+                  {selectedItem.confidence_level ||
+                    'Unknown'}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-black/5 dark:bg-white/5">
+                <div className="text-[9px] text-[#64748B]">
+                  Supporting
+                </div>
+                <div className="mt-1 text-lg font-black text-[#1DB954]">
+                  {selectedItem.supporting_count ||
+                    0}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-black/5 dark:bg-white/5">
+                <div className="text-[9px] text-[#64748B]">
+                  Contradicting
+                </div>
+                <div className="mt-1 text-lg font-black text-[#FF4D5A]">
+                  {selectedItem.contradicting_count ||
+                    0}
+                </div>
+              </div>
+
+            </div>
+
+            {selectedItem.full_result
+              ?.supporting_evidence &&
+              selectedItem.full_result
+                .supporting_evidence.length > 0 && (
+
+                <div className="mt-5">
+
+                  <h3 className="text-xs font-black uppercase tracking-wider text-[#111827] dark:text-white">
+                    Supporting Evidence
+                  </h3>
+
+                  <div className="mt-2 space-y-2">
+
+                    {selectedItem.full_result.supporting_evidence.map(
+                      (article, index) => (
+                        <a
+                          key={index}
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between gap-3 p-3 rounded-2xl glass-interactive border border-black/10 dark:border-white/10 group"
+                        >
+
+                          <div className="min-w-0">
+
+                            <div className="text-[10px] font-bold text-[#1DB954]">
+                              {article.publisher ||
+                                article.source_domain ||
+                                'Source'}
+                            </div>
+
+                            <div className="mt-1 text-xs font-bold text-[#111827] dark:text-white line-clamp-2">
+                              {article.title ||
+                                article.headline ||
+                                'Evidence article'}
+                            </div>
+
+                          </div>
+
+                          <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 text-[#64748B] group-hover:text-[#00C2FF]" />
+
+                        </a>
+                      ),
+                    )}
+
+                  </div>
+
+                </div>
+              )}
+
+            <div className="flex justify-end gap-2 mt-6">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedItem(null)
+                }
+                className="px-4 py-2 rounded-full glass-interactive text-xs font-bold cursor-pointer"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedItem(null);
+                  handleOpenResult(selectedItem);
+                }}
+                className="px-4 py-2 rounded-full bg-[#1DB954] text-black text-xs font-bold cursor-pointer flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Restore Analysis
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

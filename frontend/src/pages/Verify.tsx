@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search,
@@ -15,21 +15,27 @@ import {
   Printer,
   Newspaper,
   ChevronDown,
-  Receipt,
   Cpu,
-  Network,
   Globe,
   Radio,
   TrendingUp,
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  BarChart3,
+  SlidersHorizontal,
+  Brain,
+  FileCheck2,
+  XCircle,
+  Info,
 } from 'lucide-react';
+
 import { useApp } from '../context/AppContext';
 import { analyzeClaim, fetchLatestNews } from '../services/api';
 import { EvidenceArticle } from '../types';
-import { playGlassClickSound, playSuccessChime } from '../utils/audio';
+import {
+  playGlassClickSound,
+  playSuccessChime,
+} from '../utils/audio';
 
 export const VerifyPage: React.FC = () => {
   const {
@@ -46,74 +52,138 @@ export const VerifyPage: React.FC = () => {
     showToast,
   } = useApp();
 
-  const [loading, setLoading] = useState<boolean>(false);
-  const [loadingStage, setLoadingStage] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [isListening, setIsListening] = useState<boolean>(false);
-  const [showReceipt, setShowReceipt] = useState<boolean>(false);
-  const [animatedConfidence, setAnimatedConfidence] = useState<number>(0);
+  const [isListening, setIsListening] = useState(false);
+  const [animatedConfidence, setAnimatedConfidence] = useState(0);
 
-  // Live News State
   const [newsArticles, setNewsArticles] = useState<EvidenceArticle[]>([]);
-  const [newsLoading, setNewsLoading] = useState<boolean>(true);
+  const [newsLoading, setNewsLoading] = useState(true);
 
-  // Trending Radar Claims
+  const headlineRef = useRef<HTMLHeadingElement>(null);
+  const [headlineStyle, setHeadlineStyle] =
+    useState<React.CSSProperties>({});
+
+  const isUrlDetected =
+    claimInput.trim().startsWith('http://') ||
+    claimInput.trim().startsWith('https://');
+
   const radarClaims = [
-    'CDC releases updated respiratory health guidance',
+    'India announces a new technology initiative',
     'Federal Reserve benchmark rate decision update',
-    'James Webb telescope detects atmosphere on rocky exoplanet',
-    'Global renewable power generation crosses 35% milestone',
+    'James Webb space telescope discovery',
+    'Global renewable energy milestone',
   ];
 
-  // Quick Sample Presets
   const samplePresets = [
-    { label: 'Health Policy', query: 'WHO updates global vaccination guidelines for 2026' },
-    { label: 'Technology', query: 'Quantum computing milestone achieved by researchers' },
-    { label: 'Climate Science', query: 'Global solar energy adoption breaks annual record' },
+    {
+      label: 'Health',
+      query:
+        'WHO updates global vaccination guidelines for 2026',
+    },
+    {
+      label: 'Tech',
+      query:
+        'Quantum computing milestone achieved by researchers',
+    },
+    {
+      label: 'Climate',
+      query:
+        'Global solar energy adoption breaks annual record',
+    },
   ];
 
-  // URL Auto Detection
-  const isUrlDetected = claimInput.trim().startsWith('http://') || claimInput.trim().startsWith('https://');
+  const handleMouseMoveHeadline = (
+    e: React.MouseEvent<HTMLHeadingElement>,
+  ) => {
+    if (!headlineRef.current) return;
+
+    const rect =
+      headlineRef.current.getBoundingClientRect();
+
+    const x =
+      e.clientX -
+      rect.left -
+      rect.width / 2;
+
+    const y =
+      e.clientY -
+      rect.top -
+      rect.height / 2;
+
+    setHeadlineStyle({
+      transform: `
+        perspective(600px)
+        rotateX(${(-y / rect.height) * 10}deg)
+        rotateY(${(x / rect.width) * 10}deg)
+        translateY(-3px)
+      `,
+    });
+  };
+
+  const handleMouseLeaveHeadline = () => {
+    setHeadlineStyle({
+      transform:
+        'perspective(600px) rotateX(0deg) rotateY(0deg)',
+    });
+  };
 
   useEffect(() => {
     fetchLatestNews()
       .then((articles) => {
         setNewsArticles(articles);
-        setNewsLoading(false);
       })
-      .catch(() => setNewsLoading(false));
+      .finally(() => {
+        setNewsLoading(false);
+      });
   }, []);
 
-  // Radial Ring Confidence Entry Animation & Success Chime
   useEffect(() => {
-    if (currentResult?.confidence) {
-      playSuccessChime();
+    if (!currentResult) {
       setAnimatedConfidence(0);
-      const target = currentResult.confidence;
-      const duration = 1000;
-      const steps = 30;
-      const stepTime = duration / steps;
-      let currentStep = 0;
-
-      const timer = setInterval(() => {
-        currentStep++;
-        const progress = currentStep / steps;
-        setAnimatedConfidence(target * Math.min(progress, 1));
-
-        if (currentStep >= steps) {
-          clearInterval(timer);
-        }
-      }, stepTime);
-
-      return () => clearInterval(timer);
+      return;
     }
+
+    playSuccessChime();
+
+    const target = Number(
+      currentResult.confidence || 0,
+    );
+
+    setAnimatedConfidence(0);
+
+    const duration = 900;
+    const steps = 30;
+    const stepTime = duration / steps;
+
+    let step = 0;
+
+    const timer = window.setInterval(() => {
+      step++;
+
+      setAnimatedConfidence(
+        target * Math.min(step / steps, 1),
+      );
+
+      if (step >= steps) {
+        window.clearInterval(timer);
+      }
+    }, stepTime);
+
+    return () =>
+      window.clearInterval(timer);
   }, [currentResult]);
 
-  // Voice Search Handler (Ultra-Short Alerts)
   const toggleVoiceInput = () => {
     playGlassClickSound();
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      showToast('Voice unavailable');
+
+    const SpeechRecognitionClass =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionClass) {
+      showToast('Voice input is unavailable.');
       return;
     }
 
@@ -123,27 +193,30 @@ export const VerifyPage: React.FC = () => {
     }
 
     try {
-      const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognitionClass();
+      const recognition =
+        new SpeechRecognitionClass();
+
       recognition.continuous = false;
       recognition.interimResults = false;
       recognition.lang = 'en-US';
 
       recognition.onstart = () => {
         setIsListening(true);
-        showToast('Listening');
+        showToast('Listening...');
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
+        const transcript =
+          event.results?.[0]?.[0]?.transcript || '';
+
         setClaimInput(transcript);
         setIsListening(false);
-        showToast('Captured');
+        showToast('Claim captured.');
       };
 
       recognition.onerror = () => {
         setIsListening(false);
-        showToast('Voice error');
+        showToast('Voice input failed.');
       };
 
       recognition.onend = () => {
@@ -151,109 +224,219 @@ export const VerifyPage: React.FC = () => {
       };
 
       recognition.start();
-    } catch (e) {
+    } catch {
       setIsListening(false);
+      showToast('Voice input failed.');
     }
   };
 
-  // Primary Verification Execution
-  const handleVerify = async (claimToVerify?: string) => {
-    const query = (claimToVerify || claimInput).trim();
+  const handleVerify = async (
+    claimToVerify?: string,
+  ) => {
+    const query = (
+      claimToVerify || claimInput
+    ).trim();
+
     if (!query) {
-      setErrorMsg('Please enter a valid news claim or article URL.');
+      setErrorMsg(
+        'Please enter a news claim or article URL.',
+      );
       return;
     }
 
     playGlassClickSound();
+
     setErrorMsg(null);
+    setCurrentResult(null);
     setLoading(true);
-    setLoadingStage('Analyzing claim semantics & entities...');
+
+    setLoadingStage(
+      'Searching live news and collecting evidence...',
+    );
+
+    const stage1 = window.setTimeout(() => {
+      setLoadingStage(
+        'Comparing independent sources...',
+      );
+    }, 1000);
+
+    const stage2 = window.setTimeout(() => {
+      setLoadingStage(
+        'Running ML and AI verification...',
+      );
+    }, 2200);
+
+    const stage3 = window.setTimeout(() => {
+      setLoadingStage(
+        'Preparing evidence-backed verdict...',
+      );
+    }, 3500);
 
     try {
-      setTimeout(() => setLoadingStage('Querying live published news coverage...'), 600);
-      setTimeout(() => setLoadingStage('Evaluating linguistic patterns with SVM model...'), 1200);
-      setTimeout(() => setLoadingStage('Synthesizing evidence summary & verdict...'), 1800);
+      const result = await analyzeClaim(
+        query,
+        maxArticlesLimit,
+      );
 
-      const res = await analyzeClaim(query, maxArticlesLimit);
-      setCurrentResult(res);
-      addHistoryItem(res);
+      setCurrentResult(result);
+      addHistoryItem(result);
+    } catch (error: any) {
+      setErrorMsg(
+        error?.message ||
+        'Verification failed. Please try again.',
+      );
+    } finally {
+      window.clearTimeout(stage1);
+      window.clearTimeout(stage2);
+      window.clearTimeout(stage3);
       setLoading(false);
-    } catch (err: any) {
-      setLoading(false);
-      setErrorMsg(err.message || 'Failed to verify claim. Please check connection and try again.');
     }
   };
 
-  const handleSelectNewsArticle = (art: EvidenceArticle) => {
-    const titleText = art.title || art.headline || '';
-    setClaimInput(titleText);
-    handleVerify(titleText);
+  const handleSelectNewsArticle = (
+    article: EvidenceArticle,
+  ) => {
+    const title =
+      article.title ||
+      article.headline ||
+      '';
+
+    if (!title) return;
+
+    setClaimInput(title);
+    handleVerify(title);
   };
 
-  const handleCopySummary = () => {
-    playGlassClickSound();
+  const handleCopySummary = async () => {
     if (!currentResult) return;
-    const textToCopy = `ClarifAI Verification Receipt:\nClaim: "${currentResult.claim}"\nVerdict: ${currentResult.verdict} (${currentResult.confidence.toFixed(1)}% Confidence)\nSummary: ${currentResult.summary}`;
-    navigator.clipboard.writeText(textToCopy);
-    showToast('Receipt copied');
+
+    playGlassClickSound();
+
+    const verdict =
+      currentResult.verdict || 'UNVERIFIED';
+
+    const text = [
+      'ClarifAI Verification',
+      '',
+      `Claim: ${currentResult.claim}`,
+      `Verdict: ${verdict}`,
+      `Confidence: ${Number(
+        currentResult.confidence || 0,
+      ).toFixed(1)}%`,
+      '',
+      currentResult.summary || '',
+    ].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Verification receipt copied.');
+    } catch {
+      showToast('Unable to copy receipt.');
+    }
   };
 
-  const isCurrentSaved = currentResult ? savedItems.has(currentResult.claim) : false;
+  const isCurrentSaved = currentResult
+    ? savedItems.has(currentResult.claim)
+    : false;
 
-  // Consensus Heatmap Ratio
-  const supportingCount = currentResult?.supporting_evidence?.length || 0;
-  const contradictingCount = currentResult?.contradicting_evidence?.length || 0;
-  const totalArticles = Math.max(supportingCount + contradictingCount, 1);
-  const supportingPct = (supportingCount / totalArticles) * 100;
-  const contradictingPct = (contradictingCount / totalArticles) * 100;
+  const verdict =
+    currentResult?.verdict || 'UNVERIFIED';
+
+  const confidence =
+    Number(currentResult?.confidence || 0);
+
+  const supporting =
+    currentResult?.supporting_evidence || [];
+
+  const contradicting =
+    currentResult?.contradicting_evidence || [];
+
+  const mlResults =
+    currentResult?.ml_results || [];
+
+  const limitations =
+    currentResult?.limitations || [];
+
+  const getVerdictIcon = () => {
+    if (verdict === 'LIKELY_TRUE') {
+      return (
+        <CheckCircle2 className="w-4 h-4" />
+      );
+    }
+
+    if (verdict === 'LIKELY_FALSE') {
+      return (
+        <AlertCircle className="w-4 h-4" />
+      );
+    }
+
+    return (
+      <HelpCircle className="w-4 h-4" />
+    );
+  };
+
+  const getVerdictClass = () => {
+    if (verdict === 'LIKELY_TRUE') {
+      return 'bg-[#1DB954]/15 text-[#1DB954] border-[#1DB954]/40';
+    }
+
+    if (verdict === 'LIKELY_FALSE') {
+      return 'bg-[#FF4D5A]/15 text-[#FF4D5A] border-[#FF4D5A]/40';
+    }
+
+    return 'bg-[#F5B942]/15 text-[#F5B942] border-[#F5B942]/40';
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Header & Mission Intro */}
-      <div className="text-center max-w-2xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-content border border-[#00C2FF]/30 text-xs font-bold text-[#00C2FF] shadow-sm">
-          <Sparkles className="w-3.5 h-3.5 text-[#00C2FF]" />
-          <span>ClarifAI v2.0 Liquid Intelligence Engine</span>
-        </div>
 
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-[#111827] dark:text-white">
-          Verify what you heard.
+      {/* ======================================================
+          HEADER
+      ====================================================== */}
+
+      <div className="text-center max-w-2xl mx-auto space-y-2">
+
+        <h1
+          ref={headlineRef}
+          onMouseMove={handleMouseMoveHeadline}
+          onMouseLeave={handleMouseLeaveHeadline}
+          style={headlineStyle}
+          className="
+            text-4xl md:text-5xl
+            font-black tracking-tight
+            text-[#111827] dark:text-white
+            cursor-pointer select-none
+            headline-neon-wave
+            inline-block
+          "
+        >
+          Is this NEWS true?
         </h1>
 
-        <p className="text-base text-[#475569] dark:text-[#A7A7A7] leading-relaxed">
-          Search live published news indexes, analyze structural linguistic patterns, and uncover evidence alignment in seconds.
+        <p className="text-sm font-medium text-[#475569] dark:text-[#A7A7A7]">
+          Verify claims against live sources,
+          independent evidence, ML signals and AI analysis.
         </p>
+
       </div>
 
-      {/* SEARCH COMMAND BAR & BREAKING RADAR TICKER */}
-      <div className="space-y-3 max-w-3xl mx-auto">
-        {/* Real-time Misinformation Radar Ticker */}
-        <div className="flex items-center gap-2 px-4 py-2.5 glass-content rounded-2xl border border-black/15 dark:border-white/20 text-xs text-[#475569] dark:text-[#A7A7A7] overflow-x-auto no-scrollbar">
-          <span className="flex items-center gap-1.5 font-bold text-[#FF4D5A] flex-shrink-0">
-            <Radio className="w-3.5 h-3.5 animate-pulse" />
-            <span>BREAKING RADAR:</span>
-          </span>
-          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-0.5">
-            {radarClaims.map((item, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setClaimInput(item);
-                  playGlassClickSound();
-                }}
-                className="whitespace-nowrap hover:text-[#00C2FF] transition-colors font-medium cursor-pointer text-left flex items-center gap-1"
-              >
-                <TrendingUp className="w-3 h-3 text-[#00C2FF]" />
-                <span>"{item}"</span>
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* ======================================================
+          SEARCH
+      ====================================================== */}
 
-        {/* Liquid Glass Search Bar Instrument */}
-        <div className="glass-on-air rounded-3xl p-3 shadow-2xl border border-black/15 dark:border-white/20 relative transition-all duration-200">
+      <div className="space-y-3 max-w-3xl mx-auto">
+
+        <div className="
+          glass-on-air
+          rounded-3xl
+          p-2.5
+          shadow-xl
+          border border-black/15 dark:border-white/20
+        ">
+
           <div className="flex items-center gap-3">
-            <div className="pl-2 text-[#00C2FF] flex-shrink-0">
+
+            <div className="pl-3 text-[#00C2FF]">
               <Search className="w-5 h-5" />
             </div>
 
@@ -261,171 +444,496 @@ export const VerifyPage: React.FC = () => {
               id="main-claim-search-input"
               type="text"
               value={claimInput}
-              onChange={(e) => setClaimInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
-              placeholder="Paste news claim or article URL..."
-              className="flex-1 bg-transparent border-none text-sm md:text-base font-medium text-[#111827] dark:text-white placeholder-[#64748B] dark:placeholder-[#666666] focus:outline-none"
+              onChange={(e) =>
+                setClaimInput(e.target.value)
+              }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleVerify();
+                }
+              }}
+              placeholder="Enter news claim or paste article URL..."
+              className="
+                flex-1 bg-transparent border-none
+                text-sm md:text-base font-medium
+                text-[#111827] dark:text-white
+                placeholder-[#64748B]
+                focus:outline-none
+              "
             />
 
-            {/* URL Auto Detection Pill */}
-            {isUrlDetected && (
-              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#00C2FF]/15 border border-[#00C2FF]/40 text-[10px] font-bold text-[#00C2FF]">
-                <Globe className="w-3 h-3" />
-                <span>URL</span>
-              </span>
-            )}
-
-            {/* Ultra-Short Micro Voice Indicator Badge */}
             {isListening && (
-              <span className="px-2 py-0.5 rounded-full bg-[#FF4D5A]/20 border border-[#FF4D5A]/50 text-[10px] font-black text-[#FF4D5A] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D5A] animate-ping" />
+              <span className="
+                px-2 py-0.5 rounded-full
+                bg-[#FF4D5A]/20
+                border border-[#FF4D5A]/50
+                text-[10px] font-bold
+                text-[#FF4D5A]
+                flex items-center gap-1
+              ">
+                <span className="
+                  w-1.5 h-1.5 rounded-full
+                  bg-[#FF4D5A] animate-ping
+                " />
                 REC
               </span>
             )}
 
-            {/* Voice Input Button */}
             <button
               onClick={toggleVoiceInput}
-              className={`p-2.5 rounded-full border transition-all cursor-pointer active:scale-95 ${
-                isListening
+              className={`
+                p-2.5 rounded-full border
+                transition-all cursor-pointer
+                flex-shrink-0
+                ${isListening
                   ? 'bg-[#FF4D5A]/20 border-[#FF4D5A] text-[#FF4D5A]'
                   : 'glass-interactive text-[#475569] dark:text-[#A7A7A7]'
-              }`}
-              title="Voice Search"
+                }
+              `}
             >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {isListening ? (
+                <MicOff className="w-4 h-4" />
+              ) : (
+                <Mic className="w-4 h-4" />
+              )}
             </button>
 
-            {/* Article Limit Dropdown */}
-            <div className="relative hidden md:block">
+            <button
+              onClick={() => handleVerify()}
+              disabled={loading}
+              className="
+                flex items-center gap-2
+                px-5 py-2.5
+                bg-[#1DB954]
+                text-black
+                font-bold text-xs md:text-sm
+                rounded-full
+                shadow-md
+                hover:bg-[#1ed760]
+                active:scale-95
+                transition-all
+                cursor-pointer
+                disabled:opacity-50
+              "
+            >
+              <span>
+                {loading
+                  ? 'Checking...'
+                  : 'Check Claim'}
+              </span>
+
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+          </div>
+        </div>
+
+        {/* Controls */}
+
+        <div className="
+          flex items-center
+          justify-between
+          gap-2 px-2 flex-wrap
+          text-xs text-[#475569]
+          dark:text-[#A7A7A7]
+        ">
+
+          <div className="flex items-center gap-2">
+
+            {isUrlDetected && (
+              <span className="
+                inline-flex items-center gap-1
+                px-2.5 py-0.5 rounded-full
+                bg-[#00C2FF]/15
+                border border-[#00C2FF]/40
+                text-[11px] font-bold
+                text-[#00C2FF]
+              ">
+                <Globe className="w-3 h-3" />
+                Link Detected
+              </span>
+            )}
+
+            <div className="
+              relative inline-flex
+              items-center gap-1
+              px-2.5 py-1
+              glass-interactive
+              rounded-full
+              border border-black/15
+              dark:border-white/20
+              text-[11px] font-bold
+            ">
+
+              <SlidersHorizontal
+                className="
+                  w-3 h-3
+                  text-[#1DB954]
+                "
+              />
+
+              <span>Evidence:</span>
+
               <select
                 value={maxArticlesLimit}
                 onChange={(e) => {
                   playGlassClickSound();
-                  setMaxArticlesLimit(Number(e.target.value));
+
+                  setMaxArticlesLimit(
+                    Number(e.target.value),
+                  );
                 }}
-                className="glass-interactive appearance-none py-2.5 pl-3 pr-8 rounded-full text-xs font-bold text-[#111827] dark:text-white focus:outline-none cursor-pointer border border-black/15 dark:border-white/20"
+                className="
+                  bg-transparent
+                  text-[#111827]
+                  dark:text-white
+                  font-bold
+                  focus:outline-none
+                  cursor-pointer
+                  appearance-none
+                  pr-4
+                "
               >
-                <option value={3} className="bg-white dark:bg-[#121212]">3 articles</option>
-                <option value={5} className="bg-white dark:bg-[#121212]">5 articles</option>
-                <option value={8} className="bg-white dark:bg-[#121212]">8 articles</option>
-                <option value={10} className="bg-white dark:bg-[#121212]">10 articles</option>
+                <option value={3}>
+                  3
+                </option>
+                <option value={5}>
+                  5
+                </option>
+                <option value={8}>
+                  8
+                </option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-[#475569] dark:text-[#A7A7A7] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+              <ChevronDown
+                className="
+                  w-3 h-3
+                  absolute right-2
+                  pointer-events-none
+                "
+              />
+
             </div>
 
-            {/* Analyze CTA Button */}
-            <button
-              onClick={() => handleVerify()}
-              disabled={loading}
-              className="flex items-center gap-2 px-5 py-3 bg-[#1DB954] text-black font-bold text-xs md:text-sm rounded-full shadow-lg hover:bg-[#1ed760] active:scale-98 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <span>{loading ? 'Analyzing...' : 'Analyze Claim'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+          </div>
+
+          <div className="
+            flex items-center gap-1.5
+          ">
+            <span className="text-[11px] opacity-70">
+              Try sample:
+            </span>
+
+            {samplePresets.map(
+              (preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => {
+                    setClaimInput(
+                      preset.query,
+                    );
+                    playGlassClickSound();
+                  }}
+                  className="
+                    px-2.5 py-0.5
+                    rounded-full
+                    glass-interactive
+                    border
+                    border-black/10
+                    dark:border-white/10
+                    text-[10px]
+                    font-semibold
+                    cursor-pointer
+                    hover:text-[#00C2FF]
+                  "
+                >
+                  {preset.label}
+                </button>
+              ),
+            )}
+          </div>
+
+        </div>
+
+        {/* Radar */}
+
+        <div className="
+          flex items-center gap-2
+          px-3 py-1.5
+          glass-content
+          rounded-2xl
+          border
+          border-black/10
+          dark:border-white/10
+          text-xs
+          overflow-x-auto
+        ">
+
+          <span className="
+            flex items-center gap-1
+            font-bold
+            text-[#FF4D5A]
+            flex-shrink-0
+            text-[11px]
+          ">
+            <Radio className="w-3 h-3 animate-pulse" />
+            LIVE RADAR
+          </span>
+
+          <div className="
+            flex items-center gap-3
+            overflow-x-auto
+          ">
+
+            {radarClaims.map(
+              (item, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setClaimInput(item);
+                    playGlassClickSound();
+                  }}
+                  className="
+                    whitespace-nowrap
+                    hover:text-[#00C2FF]
+                    transition-colors
+                    font-medium
+                    cursor-pointer
+                    text-[11px]
+                    flex items-center gap-1
+                  "
+                >
+                  <TrendingUp
+                    className="
+                      w-3 h-3
+                      text-[#00C2FF]
+                    "
+                  />
+
+                  {item}
+                </button>
+              ),
+            )}
+
           </div>
         </div>
 
-        {/* Quick Instant Sample Claim Presets */}
-        <div className="flex items-center justify-center gap-2 pt-1 flex-wrap text-xs">
-          <span className="text-[#475569] dark:text-[#A7A7A7] font-medium text-[11px]">Try sample:</span>
-          {samplePresets.map((sp, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                setClaimInput(sp.query);
-                playGlassClickSound();
-              }}
-              className="px-3 py-1 rounded-full glass-interactive border border-black/15 dark:border-white/20 text-[11px] font-semibold text-[#475569] dark:text-[#A7A7A7] hover:text-[#00C2FF] transition-colors cursor-pointer"
-            >
-              {sp.label}
-            </button>
-          ))}
-        </div>
+        {/* Error */}
 
-        {/* Error Alert Box */}
         {errorMsg && (
-          <div className="px-4 py-2.5 bg-[#FF4D5A]/15 border border-[#FF4D5A]/40 rounded-2xl text-xs font-bold text-[#FF4D5A] flex items-center justify-between shadow-md animate-in fade-in">
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-              <span>{errorMsg}</span>
+          <div className="
+            px-4 py-2
+            bg-[#FF4D5A]/15
+            border border-[#FF4D5A]/40
+            rounded-2xl
+            text-xs font-bold
+            text-[#FF4D5A]
+            flex items-center
+            justify-between
+          ">
+
+            <div className="
+              flex items-center gap-2
+            ">
+              <ShieldAlert className="w-4 h-4" />
+              {errorMsg}
             </div>
+
             <button
-              onClick={() => setErrorMsg(null)}
-              className="text-[#FF4D5A] hover:text-white text-[10px] uppercase font-extrabold cursor-pointer"
+              onClick={() =>
+                setErrorMsg(null)
+              }
+              className="uppercase text-[10px]"
             >
               Dismiss
             </button>
+
           </div>
         )}
+
       </div>
 
-      {/* LOADING SCANNING STATE WITH HOLOGRAPHIC PROGRESS BAR */}
+      {/* ======================================================
+          LOADING
+      ====================================================== */}
+
       {loading && (
-        <div className="max-w-2xl mx-auto p-8 glass-on-air rounded-3xl text-center space-y-5 shadow-2xl border border-[#00C2FF]/30">
-          <div className="w-16 h-16 rounded-full bg-[#00C2FF]/10 border border-[#00C2FF]/40 flex items-center justify-center text-[#00C2FF] mx-auto animate-spin">
-            <Cpu className="w-8 h-8" />
+        <div className="
+          max-w-md mx-auto
+          p-6
+          glass-on-air
+          rounded-3xl
+          text-center
+          space-y-4
+          shadow-xl
+          border border-[#00C2FF]/30
+        ">
+
+          <div className="
+            w-12 h-12
+            rounded-full
+            bg-[#00C2FF]/10
+            border border-[#00C2FF]/40
+            flex items-center justify-center
+            text-[#00C2FF]
+            mx-auto
+            animate-spin
+          ">
+            <Cpu className="w-6 h-6" />
           </div>
 
-          <div className="space-y-1">
-            <h3 className="text-base font-bold text-[#111827] dark:text-white">Analyzing News Authenticity</h3>
-            <p className="text-xs text-[#00C2FF] font-semibold">{loadingStage}</p>
+          <div>
+            <h3 className="
+              text-sm font-bold
+              text-[#111827]
+              dark:text-white
+            ">
+              Verifying News Claim
+            </h3>
+
+            <p className="
+              text-xs
+              text-[#00C2FF]
+              font-semibold
+              mt-1
+            ">
+              {loadingStage}
+            </p>
           </div>
 
-          {/* Holographic Line Progress Bar */}
-          <div className="w-full h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden relative">
+          <div className="
+            w-full h-1
+            bg-black/10
+            dark:bg-white/10
+            rounded-full
+            overflow-hidden
+          ">
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: '100%' }}
-              transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
-              className="w-1/2 h-full bg-gradient-to-r from-[#00C2FF] via-[#1DB954] to-[#00C2FF] rounded-full"
+              transition={{
+                repeat: Infinity,
+                duration: 1.4,
+              }}
+              className="
+                w-1/2 h-full
+                bg-[#1DB954]
+                rounded-full
+              "
             />
           </div>
+
         </div>
       )}
 
-      {/* VERIFICATION RESULT VIEW */}
+      {/* ======================================================
+          RESULT
+      ====================================================== */}
+
       {!loading && currentResult && (
-        <div className="space-y-8 animate-in fade-in duration-300">
-          {/* Action Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-4 glass-content rounded-3xl border border-black/15 dark:border-white/20 shadow-lg">
-            <div className="flex items-center gap-2">
+        <div className="
+          max-w-5xl mx-auto
+          space-y-6
+          animate-in
+          fade-in
+          duration-300
+        ">
+
+          {/* Toolbar */}
+
+          <div className="
+            flex flex-wrap
+            items-center
+            justify-between
+            gap-3
+            p-3
+            glass-content
+            rounded-2xl
+            border border-black/15
+            dark:border-white/20
+          ">
+
+            <div className="
+              flex items-center gap-2
+            ">
+
               <button
                 onClick={() => {
                   playGlassClickSound();
                   resetVerification();
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-2 glass-interactive rounded-full text-xs font-bold text-[#475569] dark:text-[#A7A7A7] hover:text-[#111827] dark:hover:text-white"
+                className="
+                  flex items-center gap-1.5
+                  px-3 py-1.5
+                  glass-interactive
+                  rounded-full
+                  text-xs font-bold
+                "
               >
-                <RotateCcw className="w-3.5 h-3.5 text-[#00C2FF]" />
-                <span>Verify Another</span>
+                <RotateCcw
+                  className="
+                    w-3.5 h-3.5
+                    text-[#00C2FF]
+                  "
+                />
+                Check Another
               </button>
 
               <button
-                onClick={() => toggleSaveItem(currentResult.claim)}
-                className="flex items-center gap-1.5 px-3.5 py-2 glass-interactive rounded-full text-xs font-bold"
+                onClick={() =>
+                  toggleSaveItem(
+                    currentResult.claim,
+                  )
+                }
+                className="
+                  flex items-center gap-1.5
+                  px-3 py-1.5
+                  glass-interactive
+                  rounded-full
+                  text-xs font-bold
+                "
               >
                 {isCurrentSaved ? (
                   <>
-                    <BookmarkCheck className="w-3.5 h-3.5 text-[#1DB954]" />
-                    <span className="text-[#1DB954]">Saved</span>
+                    <BookmarkCheck
+                      className="
+                        w-3.5 h-3.5
+                        text-[#1DB954]
+                      "
+                    />
+                    <span className="text-[#1DB954]">
+                      Saved
+                    </span>
                   </>
                 ) : (
                   <>
-                    <Bookmark className="w-3.5 h-3.5 text-[#475569] dark:text-[#A7A7A7]" />
-                    <span className="text-[#475569] dark:text-[#A7A7A7]">Save</span>
+                    <Bookmark
+                      className="w-3.5 h-3.5"
+                    />
+                    Save
                   </>
                 )}
               </button>
+
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="
+              flex items-center gap-2
+            ">
+
               <button
                 onClick={handleCopySummary}
-                className="flex items-center gap-1.5 px-3.5 py-2 glass-interactive rounded-full text-xs font-bold text-[#00C2FF]"
+                className="
+                  flex items-center gap-1.5
+                  px-3 py-1.5
+                  glass-interactive
+                  rounded-full
+                  text-xs font-bold
+                  text-[#00C2FF]
+                "
               >
                 <Share2 className="w-3.5 h-3.5" />
-                <span>Share Receipt</span>
+                Share
               </button>
 
               <button
@@ -433,232 +941,1002 @@ export const VerifyPage: React.FC = () => {
                   playGlassClickSound();
                   window.print();
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-2 glass-interactive rounded-full text-xs font-bold text-[#1DB954]"
+                className="
+                  flex items-center gap-1.5
+                  px-3 py-1.5
+                  glass-interactive
+                  rounded-full
+                  text-xs font-bold
+                  text-[#1DB954]
+                "
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Print Report</span>
+                Print
               </button>
 
-              <button
-                onClick={() => {
-                  playGlassClickSound();
-                  setShowReceipt(!showReceipt);
-                }}
-                className="flex items-center gap-1.5 px-3.5 py-2 glass-interactive rounded-full text-xs font-bold text-[#F5B942]"
-              >
-                <Receipt className="w-3.5 h-3.5" />
-                <span>Receipt</span>
-              </button>
             </div>
+
           </div>
 
-          {/* VERDICT CARD WITH RADIAL PROGRESS RING & HEATMAP SPECTRUM */}
-          <div className="p-8 glass-on-air rounded-3xl space-y-6 shadow-2xl border border-black/15 dark:border-white/20 relative overflow-hidden">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              {/* Left: Verdict Badge & Claim */}
-              <div className="space-y-3 text-center md:text-left flex-1">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full font-black text-sm tracking-wider uppercase shadow-md">
-                  {currentResult.verdict === 'LIKELY_TRUE' && (
-                    <span className="bg-[#1DB954]/15 text-[#1DB954] border border-[#1DB954]/40 px-4 py-1.5 rounded-full flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" /> LIKELY TRUE
-                    </span>
-                  )}
-                  {currentResult.verdict === 'LIKELY_FALSE' && (
-                    <span className="bg-[#FF4D5A]/15 text-[#FF4D5A] border border-[#FF4D5A]/40 px-4 py-1.5 rounded-full flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" /> LIKELY FALSE
-                    </span>
-                  )}
-                  {currentResult.verdict === 'UNVERIFIED' && (
-                    <span className="bg-[#F5B942]/15 text-[#F5B942] border border-[#F5B942]/40 px-4 py-1.5 rounded-full flex items-center gap-2">
-                      <HelpCircle className="w-4 h-4" /> UNVERIFIED
-                    </span>
-                  )}
-                </div>
+          {/* Main verdict */}
 
-                <h2 className="text-xl md:text-2xl font-bold text-[#111827] dark:text-white leading-snug">
+          <div className="
+            glass-on-air
+            rounded-3xl
+            p-6 md:p-8
+            space-y-6
+            border border-black/15
+            dark:border-white/20
+            shadow-xl
+          ">
+
+            <div className="
+              flex flex-col
+              md:flex-row
+              items-center
+              justify-between
+              gap-8
+            ">
+
+              <div className="
+                flex-1
+                space-y-4
+                text-center
+                md:text-left
+              ">
+
+                <span className={`
+                  inline-flex
+                  items-center gap-2
+                  px-4 py-1.5
+                  rounded-full
+                  border
+                  text-sm
+                  font-black
+                  tracking-wider
+                  ${getVerdictClass()}
+                `}>
+                  {getVerdictIcon()}
+                  {verdict.replace(
+                    /_/g,
+                    ' ',
+                  )}
+                </span>
+
+                <h2 className="
+                  text-xl md:text-2xl
+                  font-bold
+                  text-[#111827]
+                  dark:text-white
+                  leading-snug
+                ">
                   "{currentResult.claim}"
                 </h2>
 
-                <p className="text-xs text-[#475569] dark:text-[#A7A7A7]">
-                  Verified on {currentResult.timestamp || 'Today'} • Evaluated across {currentResult.articles_found || 0} live published reports.
-                </p>
+                {currentResult.confidence_level && (
+                  <p className="
+                    text-xs
+                    font-semibold
+                    text-[#64748B]
+                  ">
+                    Confidence level:{' '}
+                    {currentResult.confidence_level}
+                  </p>
+                )}
+
               </div>
 
-              {/* Right: SVG Radial Progress Ring Score Meter */}
-              <div className="flex flex-col items-center justify-center p-4 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/10 dark:border-white/10 min-w-[160px]">
-                <div className="relative w-24 h-24 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              {/* Confidence */}
+
+              <div className="
+                flex flex-col
+                items-center
+                justify-center
+                p-4
+                bg-black/5
+                dark:bg-white/5
+                rounded-2xl
+                border
+                border-black/10
+                dark:border-white/10
+                min-w-[150px]
+              ">
+
+                <div className="
+                  relative
+                  w-24 h-24
+                ">
+
+                  <svg
+                    className="
+                      w-full h-full
+                      -rotate-90
+                    "
+                    viewBox="0 0 36 36"
+                  >
+
                     <path
-                      className="text-black/10 dark:text-white/10"
+                      className="
+                        text-black/10
+                        dark:text-white/10
+                      "
                       strokeWidth="3.5"
                       stroke="currentColor"
                       fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      d="
+                        M18 2.0845
+                        a15.9155 15.9155 0 0 1
+                        0 31.831
+                        a15.9155 15.9155 0 0 1
+                        0 -31.831
+                      "
                     />
+
                     <path
-                      className={`${
-                        currentResult.verdict === 'LIKELY_TRUE'
+                      className={
+                        verdict === 'LIKELY_TRUE'
                           ? 'text-[#1DB954]'
-                          : currentResult.verdict === 'LIKELY_FALSE'
-                          ? 'text-[#FF4D5A]'
-                          : 'text-[#F5B942]'
-                      } transition-all duration-1000 ease-out`}
-                      strokeDasharray={`${animatedConfidence}, 100`}
+                          : verdict === 'LIKELY_FALSE'
+                            ? 'text-[#FF4D5A]'
+                            : 'text-[#F5B942]'
+                      }
+                      strokeDasharray={`
+                        ${animatedConfidence},100
+                      `}
                       strokeWidth="3.5"
                       strokeLinecap="round"
                       stroke="currentColor"
                       fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      d="
+                        M18 2.0845
+                        a15.9155 15.9155 0 0 1
+                        0 31.831
+                        a15.9155 15.9155 0 0 1
+                        0 -31.831
+                      "
                     />
+
                   </svg>
 
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-black text-[#111827] dark:text-white leading-none">
+                  <div className="
+                    absolute inset-0
+                    flex flex-col
+                    items-center
+                    justify-center
+                  ">
+                    <span className="
+                      text-xl
+                      font-black
+                      text-[#111827]
+                      dark:text-white
+                    ">
                       {animatedConfidence.toFixed(0)}%
                     </span>
-                    <span className="text-[9px] font-bold text-[#475569] dark:text-[#A7A7A7] mt-0.5">
-                      Confidence
-                    </span>
                   </div>
+
                 </div>
 
-                <span className="text-[11px] font-bold text-[#1DB954] mt-2">
-                  {currentResult.confidence_level || 'High Confidence'}
+                <span className="
+                  text-[11px]
+                  font-bold
+                  text-[#00C2FF]
+                  mt-2
+                ">
+                  Confidence Score
                 </span>
+
               </div>
+
             </div>
 
-            {/* Publisher Evidence Consensus Heatmap Spectrum Bar */}
-            <div className="p-4 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/10 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-[#111827] dark:text-white">
-                <span className="flex items-center gap-1.5">
-                  <BarChart3 className="w-4 h-4 text-[#00C2FF]" />
-                  <span>Publisher Evidence Consensus Spectrum</span>
-                </span>
-                <span className="text-[11px] text-[#475569] dark:text-[#A7A7A7]">
-                  {supportingCount} Supporting / {contradictingCount} Contradicting
-                </span>
-              </div>
+            {/* Summary */}
 
-              {/* Spectrum Heatmap Bar */}
-              <div className="h-3 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden flex">
-                <div
-                  style={{ width: `${supportingPct}%` }}
-                  className="bg-[#1DB954] h-full transition-all duration-700"
-                  title={`${supportingCount} Supporting Reports`}
-                />
-                <div
-                  style={{ width: `${contradictingPct}%` }}
-                  className="bg-[#FF4D5A] h-full transition-all duration-700"
-                  title={`${contradictingCount} Contradicting Reports`}
-                />
-              </div>
+            <div className="
+              p-5
+              bg-black/5
+              dark:bg-white/5
+              rounded-2xl
+              border
+              border-black/10
+              dark:border-white/10
+              space-y-2
+            ">
 
-              <div className="flex items-center justify-between text-[10px] text-[#475569] dark:text-[#A7A7A7]">
-                <span className="text-[#1DB954] font-bold">● {supportingPct.toFixed(0)}% Supporting Consensus</span>
-                <span className="text-[#FF4D5A] font-bold">● {contradictingPct.toFixed(0)}% Contradicting</span>
-              </div>
-            </div>
-
-            {/* AI Explanation Summary Box */}
-            <div className="p-5 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/10 dark:border-white/10 space-y-2">
-              <div className="text-xs font-bold text-[#00C2FF] flex items-center gap-1.5">
+              <div className="
+                text-xs font-bold
+                text-[#00C2FF]
+                flex items-center gap-1.5
+              ">
                 <Sparkles className="w-4 h-4" />
-                <span>AI Evidence Synthesis Summary</span>
+                Evidence Summary
               </div>
-              <p className="text-sm text-[#111827] dark:text-white leading-relaxed">
-                {currentResult.summary}
+
+              <p className="
+                text-sm
+                text-[#111827]
+                dark:text-white
+                leading-relaxed
+              ">
+                {currentResult.summary ||
+                  'No summary was generated.'}
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* ==================================================
+              EVIDENCE OVERVIEW
+          ================================================== */}
+
+          <div className="
+            grid
+            grid-cols-1
+            md:grid-cols-3
+            gap-4
+          ">
+
+            <div className="
+              glass-content
+              rounded-2xl
+              p-4
+              border
+              border-black/10
+              dark:border-white/10
+            ">
+              <div className="
+                flex items-center
+                justify-between
+              ">
+                <span className="
+                  text-xs font-bold
+                  text-[#64748B]
+                ">
+                  Sources Found
+                </span>
+
+                <Newspaper
+                  className="
+                    w-4 h-4
+                    text-[#00C2FF]
+                  "
+                />
+              </div>
+
+              <p className="
+                text-2xl
+                font-black
+                mt-2
+                text-[#111827]
+                dark:text-white
+              ">
+                {currentResult.articles_found ??
+                  supporting.length +
+                  contradicting.length}
               </p>
             </div>
-          </div>
 
-          {/* EVIDENCE SOURCE CARDS (SUPPORTING & CONTRADICTING) */}
-          <div className="space-y-4">
-            <div className="text-lg font-bold text-[#111827] dark:text-white flex items-center gap-2">
-              <Network className="w-5 h-5 text-[#1DB954]" />
-              <span>Evidence Articles & Publisher Consensus</span>
+            <div className="
+              glass-content
+              rounded-2xl
+              p-4
+              border
+              border-black/10
+              dark:border-white/10
+            ">
+              <div className="
+                flex items-center
+                justify-between
+              ">
+                <span className="
+                  text-xs font-bold
+                  text-[#64748B]
+                ">
+                  Supporting
+                </span>
+
+                <FileCheck2
+                  className="
+                    w-4 h-4
+                    text-[#1DB954]
+                  "
+                />
+              </div>
+
+              <p className="
+                text-2xl
+                font-black
+                mt-2
+                text-[#1DB954]
+              ">
+                {supporting.length}
+              </p>
             </div>
 
-            {currentResult.supporting_evidence && currentResult.supporting_evidence.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-[#1DB954] uppercase tracking-wider flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Supporting Evidence Reports ({currentResult.supporting_evidence.length})</span>
-                </h4>
+            <div className="
+              glass-content
+              rounded-2xl
+              p-4
+              border
+              border-black/10
+              dark:border-white/10
+            ">
+              <div className="
+                flex items-center
+                justify-between
+              ">
+                <span className="
+                  text-xs font-bold
+                  text-[#64748B]
+                ">
+                  Contradicting
+                </span>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentResult.supporting_evidence.map((art, idx) => (
-                    <a
-                      key={idx}
-                      href={art.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-4 glass-content glass-content-hover rounded-2xl space-y-2 border border-black/15 dark:border-white/20 group"
-                    >
-                      <div className="flex items-center justify-between text-xs text-[#475569] dark:text-[#A7A7A7]">
-                        <span className="font-bold text-[#1DB954]">{art.publisher || 'Verified News'}</span>
-                        <ExternalLink className="w-3.5 h-3.5 group-hover:text-[#1DB954] transition-colors" />
-                      </div>
-                      <h5 className="font-bold text-sm text-[#111827] dark:text-white group-hover:text-[#1DB954] transition-colors line-clamp-2">
-                        {art.title || art.headline}
-                      </h5>
-                      <p className="text-xs text-[#475569] dark:text-[#A7A7A7] line-clamp-2">
-                        {art.snippet || art.finding || art.summary}
-                      </p>
-                    </a>
-                  ))}
+                <XCircle
+                  className="
+                    w-4 h-4
+                    text-[#FF4D5A]
+                  "
+                />
+              </div>
+
+              <p className="
+                text-2xl
+                font-black
+                mt-2
+                text-[#FF4D5A]
+              ">
+                {contradicting.length}
+              </p>
+            </div>
+
+          </div>
+
+          {/* ==================================================
+              AI + SOURCE ASSESSMENT
+          ================================================== */}
+
+          <div className="
+            grid
+            grid-cols-1
+            md:grid-cols-2
+            gap-4
+          ">
+
+            <div className="
+              glass-content
+              rounded-2xl
+              p-5
+              border
+              border-[#00C2FF]/20
+              space-y-3
+            ">
+
+              <div className="
+                flex items-center gap-2
+                text-[#00C2FF]
+                font-bold text-sm
+              ">
+                <Brain className="w-4 h-4" />
+                AI Interpretation
+              </div>
+
+              <p className="
+                text-sm
+                leading-relaxed
+                text-[#111827]
+                dark:text-white
+              ">
+                {currentResult.ml_interpretation ||
+                  'AI interpretation unavailable.'}
+              </p>
+
+            </div>
+
+            <div className="
+              glass-content
+              rounded-2xl
+              p-5
+              border
+              border-[#1DB954]/20
+              space-y-3
+            ">
+
+              <div className="
+                flex items-center gap-2
+                text-[#1DB954]
+                font-bold text-sm
+              ">
+                <Globe className="w-4 h-4" />
+                Source Assessment
+              </div>
+
+              <p className="
+                text-sm
+                leading-relaxed
+                text-[#111827]
+                dark:text-white
+              ">
+                {currentResult.source_assessment ||
+                  'No source assessment available.'}
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* ==================================================
+              WHY
+          ================================================== */}
+
+          {currentResult.why &&
+            currentResult.why.length > 0 && (
+              <div className="
+                glass-content
+                rounded-2xl
+                p-5
+                border
+                border-black/10
+                dark:border-white/10
+              ">
+
+                <div className="
+                  flex items-center gap-2
+                  text-sm font-bold
+                  text-[#111827]
+                  dark:text-white
+                  mb-3
+                ">
+                  <Info className="
+                    w-4 h-4
+                    text-[#00C2FF]
+                  " />
+                  Why ClarifAI reached this result
                 </div>
+
+                <ul className="
+                  space-y-2
+                  text-sm
+                  text-[#475569]
+                  dark:text-[#A7A7A7]
+                ">
+                  {currentResult.why.map(
+                    (reason, index) => (
+                      <li
+                        key={index}
+                        className="
+                          flex gap-2
+                        "
+                      >
+                        <span className="
+                          text-[#00C2FF]
+                          font-bold
+                        ">
+                          •
+                        </span>
+                        <span>
+                          {reason}
+                        </span>
+                      </li>
+                    ),
+                  )}
+                </ul>
+
               </div>
             )}
-          </div>
+
+          {/* ==================================================
+              SUPPORTING EVIDENCE
+          ================================================== */}
+
+          {supporting.length > 0 && (
+            <EvidenceSection
+              title="Supporting Evidence"
+              icon={
+                <CheckCircle2
+                  className="
+                    w-4 h-4
+                    text-[#1DB954]
+                  "
+                />
+              }
+              articles={supporting}
+              accent="green"
+            />
+          )}
+
+          {/* ==================================================
+              CONTRADICTING EVIDENCE
+          ================================================== */}
+
+          {contradicting.length > 0 && (
+            <EvidenceSection
+              title="Contradicting Evidence"
+              icon={
+                <AlertCircle
+                  className="
+                    w-4 h-4
+                    text-[#FF4D5A]
+                  "
+                />
+              }
+              articles={contradicting}
+              accent="red"
+            />
+          )}
+
+          {/* ==================================================
+              ML SIGNALS
+          ================================================== */}
+
+          {mlResults.length > 0 && (
+            <div className="
+              glass-content
+              rounded-2xl
+              p-5
+              border
+              border-black/10
+              dark:border-white/10
+              space-y-4
+            ">
+
+              <div className="
+                flex items-center gap-2
+                text-sm font-bold
+                text-[#111827]
+                dark:text-white
+              ">
+                <Brain className="
+                  w-4 h-4
+                  text-[#00C2FF]
+                " />
+                ML Signals
+              </div>
+
+              <div className="
+                grid
+                grid-cols-1
+                md:grid-cols-2
+                gap-3
+              ">
+
+                {mlResults
+                  .flatMap(
+                    (result) =>
+                      result.signals || [],
+                  )
+                  .slice(0, 12)
+                  .map(
+                    (signal, index) => (
+                      <div
+                        key={`${signal.feature}-${index}`}
+                        className="
+                          flex
+                          items-center
+                          justify-between
+                          px-3 py-2
+                          rounded-xl
+                          bg-black/5
+                          dark:bg-white/5
+                        "
+                      >
+                        <span className="
+                          text-xs
+                          font-semibold
+                          text-[#475569]
+                          dark:text-[#A7A7A7]
+                        ">
+                          {signal.feature ||
+                            'Signal'}
+                        </span>
+
+                        <span className={`
+                          text-xs
+                          font-black
+                          ${Number(
+                          signal.contribution ||
+                          0,
+                        ) >= 0
+                            ? 'text-[#1DB954]'
+                            : 'text-[#FF4D5A]'
+                          }
+                        `}>
+                          {Number(
+                            signal.contribution || 0,
+                          ).toFixed(4)}
+                        </span>
+                      </div>
+                    ),
+                  )}
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ==================================================
+              LIMITATIONS
+          ================================================== */}
+
+          {limitations.length > 0 && (
+            <div className="
+              p-4
+              rounded-2xl
+              bg-[#F5B942]/10
+              border border-[#F5B942]/30
+            ">
+
+              <div className="
+                flex items-center gap-2
+                text-sm font-bold
+                text-[#F5B942]
+                mb-2
+              ">
+                <ShieldAlert className="w-4 h-4" />
+                Limitations
+              </div>
+
+              <ul className="
+                space-y-1
+                text-xs
+                text-[#475569]
+                dark:text-[#A7A7A7]
+              ">
+                {limitations.map(
+                  (item, index) => (
+                    <li key={index}>
+                      • {item}
+                    </li>
+                  ),
+                )}
+              </ul>
+
+            </div>
+          )}
+
         </div>
       )}
 
-      {/* LIVE NEWS REPORTS GRID (WHEN NO RESULT IS ACTIVE) */}
+      {/* ======================================================
+          TRENDING
+      ====================================================== */}
+
       {!loading && !currentResult && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="text-lg font-bold text-[#111827] dark:text-white flex items-center gap-2">
-              <Newspaper className="w-5 h-5 text-[#00C2FF]" />
-              <span>Live News Reports</span>
+        <div className="
+          max-w-5xl mx-auto
+          space-y-4
+        ">
+
+          <div className="
+            flex items-center
+            justify-between
+          ">
+
+            <div className="
+              text-sm font-bold
+              text-[#111827]
+              dark:text-white
+              flex items-center gap-2
+            ">
+              <Newspaper
+                className="
+                  w-4 h-4
+                  text-[#00C2FF]
+                "
+              />
+              Verified Trending News Reports
             </div>
-            <span className="text-xs text-[#475569] dark:text-[#A7A7A7]">Click any headline to verify</span>
+
+            <span className="
+              text-[11px]
+              font-bold
+              text-[#1DB954]
+              bg-[#1DB954]/10
+              px-2.5 py-0.5
+              rounded-full
+              border
+              border-[#1DB954]/30
+            ">
+              Live Feed
+            </span>
+
           </div>
 
           {newsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[1, 2, 3, 4].map((n) => (
-                <div key={n} className="p-5 glass-content rounded-2xl h-28 animate-pulse bg-black/5 dark:bg-white/5" />
-              ))}
+            <div className="
+              grid
+              grid-cols-1
+              md:grid-cols-2
+              gap-4
+            ">
+              {[1, 2, 3, 4].map(
+                (item) => (
+                  <div
+                    key={item}
+                    className="
+                      p-5
+                      glass-content
+                      rounded-2xl
+                      h-24
+                      animate-pulse
+                    "
+                  />
+                ),
+              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {newsArticles.slice(0, 4).map((art, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => handleSelectNewsArticle(art)}
-                  className="p-5 glass-on-air rounded-2xl space-y-2 border border-black/15 dark:border-white/20 group cursor-pointer"
-                >
-                  <div className="flex items-center justify-between text-xs text-[#475569] dark:text-[#A7A7A7]">
-                    <span className="font-bold text-[#00C2FF]">{art.publisher || 'Live Feed'}</span>
-                    <span className="text-[10px] bg-[#00C2FF]/10 text-[#00C2FF] px-2 py-0.5 rounded-full font-bold">
-                      Click to Verify
-                    </span>
-                  </div>
 
-                  <h4 className="font-bold text-sm text-[#111827] dark:text-white group-hover:text-[#00C2FF] transition-colors line-clamp-2">
-                    {art.title || art.headline}
-                  </h4>
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={{
+                hidden: {
+                  opacity: 0,
+                },
+                show: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.1,
+                  },
+                },
+              }}
+              className="
+                grid
+                grid-cols-1
+                md:grid-cols-2
+                gap-4
+              "
+            >
 
-                  <p className="text-xs text-[#475569] dark:text-[#A7A7A7] line-clamp-2">
-                    {art.snippet || art.finding || art.summary}
-                  </p>
-                </div>
-              ))}
-            </div>
+              {newsArticles
+                .slice(0, 4)
+                .map(
+                  (article, index) => (
+                    <motion.button
+                      key={index}
+                      variants={{
+                        hidden: {
+                          opacity: 0,
+                          y: 12,
+                        },
+                        show: {
+                          opacity: 1,
+                          y: 0,
+                        },
+                      }}
+                      onClick={() =>
+                        handleSelectNewsArticle(
+                          article,
+                        )
+                      }
+                      className="
+                        text-left
+                        p-4
+                        glass-on-air
+                        rounded-2xl
+                        space-y-2
+                        border
+                        border-black/15
+                        dark:border-white/20
+                        group
+                        cursor-pointer
+                      "
+                    >
+
+                      <div className="
+                        flex
+                        items-center
+                        justify-between
+                        text-xs
+                      ">
+
+                        <span className="
+                          font-bold
+                          text-[#00C2FF]
+                        ">
+                          {article.publisher ||
+                            'Verified Feed'}
+                        </span>
+
+                        <span className="
+                          text-[10px]
+                          bg-[#00C2FF]/10
+                          text-[#00C2FF]
+                          px-2 py-0.5
+                          rounded-full
+                          font-bold
+                        ">
+                          Check
+                        </span>
+
+                      </div>
+
+                      <h4 className="
+                        font-bold
+                        text-sm
+                        text-[#111827]
+                        dark:text-white
+                        group-hover:text-[#00C2FF]
+                        transition-colors
+                      ">
+                        {article.title ||
+                          article.headline ||
+                          'Untitled report'}
+                      </h4>
+
+                      {article.snippet && (
+                        <p className="
+                          text-xs
+                          text-[#64748B]
+                          dark:text-[#A7A7A7]
+                          line-clamp-2
+                        ">
+                          {article.snippet}
+                        </p>
+                      )}
+
+                    </motion.button>
+                  ),
+                )}
+
+            </motion.div>
           )}
+
         </div>
       )}
+
     </div>
   );
 };
+
+/* ============================================================
+   EVIDENCE SECTION
+============================================================ */
+
+interface EvidenceSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  articles: EvidenceArticle[];
+  accent: 'green' | 'red';
+}
+
+const EvidenceSection: React.FC<
+  EvidenceSectionProps
+> = ({
+  title,
+  icon,
+  articles,
+  accent,
+}) => {
+    const border =
+      accent === 'green'
+        ? 'border-[#1DB954]/20'
+        : 'border-[#FF4D5A]/20';
+
+    return (
+      <div className="
+      space-y-3
+    ">
+
+        <div className="
+        flex items-center gap-2
+        text-sm font-bold
+        text-[#111827]
+        dark:text-white
+      ">
+          {icon}
+          {title}
+          <span className="
+          text-[10px]
+          px-2 py-0.5
+          rounded-full
+          bg-black/5
+          dark:bg-white/5
+        ">
+            {articles.length}
+          </span>
+        </div>
+
+        <div className="
+        grid
+        grid-cols-1
+        md:grid-cols-2
+        gap-4
+      ">
+
+          {articles.map(
+            (article, index) => (
+              <a
+                key={`${article.url}-${index}`}
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`
+                glass-content
+                rounded-2xl
+                p-4
+                border
+                ${border}
+                group
+                hover:translate-y-[-2px]
+                transition-all
+              `}
+              >
+
+                <div className="
+                flex
+                items-center
+                justify-between
+                gap-3
+                text-xs
+              ">
+
+                  <span className="
+                  font-bold
+                  text-[#00C2FF]
+                ">
+                    {article.publisher ||
+                      article.source_domain ||
+                      'Verified Source'}
+                  </span>
+
+                  <ExternalLink
+                    className="
+                    w-3.5 h-3.5
+                    opacity-60
+                    group-hover:opacity-100
+                  "
+                  />
+
+                </div>
+
+                <h4 className="
+                mt-2
+                font-bold
+                text-sm
+                text-[#111827]
+                dark:text-white
+                group-hover:text-[#00C2FF]
+                transition-colors
+                line-clamp-3
+              ">
+                  {article.title ||
+                    article.headline ||
+                    'Untitled article'}
+                </h4>
+
+                {article.publication_date && (
+                  <p className="
+                  mt-2
+                  text-[10px]
+                  text-[#64748B]
+                ">
+                    {article.publication_date}
+                  </p>
+                )}
+
+                {(article.snippet ||
+                  article.summary ||
+                  article.finding) && (
+                    <p className="
+                  mt-2
+                  text-xs
+                  text-[#64748B]
+                  dark:text-[#A7A7A7]
+                  line-clamp-3
+                ">
+                      {article.finding ||
+                        article.summary ||
+                        article.snippet}
+                    </p>
+                  )}
+
+              </a>
+            ),
+          )}
+
+        </div>
+
+      </div>
+    );
+  };

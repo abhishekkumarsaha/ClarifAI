@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { MoreVertical, Download, RefreshCw, Flag, BookOpen, RefreshCcw } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { SystemStatusTicker } from '../SystemTicker/SystemTicker';
 
 export const TopBar: React.FC = () => {
   const {
@@ -54,61 +55,9 @@ export const TopBar: React.FC = () => {
     about: 'Help & Documentation',
   };
 
-  const threeDotPopover = threeDotMenuOpen && (
-    <div
-      ref={menuRef}
-      className="fixed top-16 right-16 w-60 glass-interactive rounded-3xl shadow-2xl p-2 z-[9999] text-[#111827] dark:text-white border border-black/15 dark:border-white/20 animate-in fade-in slide-in-from-top-2 duration-150"
-      style={{ position: 'fixed', top: '68px', right: '64px' }}
-    >
-      <button
-        onClick={() => {
-          setActiveModal('export');
-          setThreeDotMenuOpen(false);
-        }}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl transition-colors text-left cursor-pointer"
-      >
-        <Download className="w-4 h-4 text-[#1DB954]" />
-        <span>Export Scan Data</span>
-      </button>
-
-      <button
-        onClick={() => {
-          setActiveModal('cache');
-          setThreeDotMenuOpen(false);
-        }}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl transition-colors text-left cursor-pointer"
-      >
-        <RefreshCw className="w-4 h-4 text-[#00C2FF]" />
-        <span>Clear Cache</span>
-      </button>
-
-      <button
-        onClick={() => {
-          setActiveModal('report');
-          setThreeDotMenuOpen(false);
-        }}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl transition-colors text-left cursor-pointer"
-      >
-        <Flag className="w-4 h-4 text-[#FF4D5A]" />
-        <span>Report Misclassification</span>
-      </button>
-
-      <button
-        onClick={() => {
-          setActiveModal('doc');
-          setThreeDotMenuOpen(false);
-        }}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl transition-colors text-left cursor-pointer"
-      >
-        <BookOpen className="w-4 h-4 text-[#F5B942]" />
-        <span>Documentation</span>
-      </button>
-    </div>
-  );
-
   return (
     <header className="h-16 px-6 bg-white/80 dark:bg-[#080808]/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 flex items-center justify-between sticky top-0 z-20 transition-colors duration-300">
-      {/* Left: Detailed 3D Glowing Prism Brand Logo & Context Title */}
+      {/* Left: Detailed 3D Glowing Prism Brand Logo */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => setActiveNav('verify')}
@@ -143,21 +92,26 @@ export const TopBar: React.FC = () => {
               Clarif<span className="text-[#00C2FF]">AI</span>
             </span>
             <span className="text-[9px] font-bold text-[#1DB954] uppercase tracking-wider leading-none mt-1">
-              Liquid Intelligence
+              News Authenticity
             </span>
           </div>
         </button>
 
         <div className="w-[1px] h-5 bg-black/10 dark:bg-white/10 hidden sm:block" />
 
-        <h2 className="text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] tracking-tight">
+        <h2 className="text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] tracking-tight hidden sm:block">
           {pageTitles[activeNav] || 'ClarifAI'}
         </h2>
       </div>
 
+      {/* Center: System Telemetry Ticker Pill embedded right inside the top bar */}
+      <div className="hidden md:block">
+        <SystemStatusTicker />
+      </div>
+
       {/* Right: Status Badge, 3-Dot Menu Trigger, and Account Trigger Avatar */}
       <div className="flex items-center gap-3">
-        {/* Backend Status Badge */}
+        {/* Backend Online/Offline Status Badge */}
         <div className="flex items-center gap-2 px-3 py-1 rounded-full glass-content text-xs font-semibold border border-black/15 dark:border-white/20">
           <span
             className={`w-2 h-2 rounded-full ${
@@ -191,8 +145,60 @@ export const TopBar: React.FC = () => {
           <MoreVertical className="w-4 h-4" />
         </button>
 
-        {/* Render 3-Dot Popover into document.body via Portal */}
-        {ReactDOM.createPortal(threeDotPopover, document.body)}
+        {/* Safe Portal Rendering for 3-Dot Popover */}
+        {threeDotMenuOpen &&
+          ReactDOM.createPortal(
+            <div
+              ref={menuRef}
+              className="fixed w-60 glass-interactive rounded-3xl shadow-2xl p-2 z-[9999] text-[#111827] dark:text-white border border-black/15 dark:border-white/20 animate-in fade-in slide-in-from-top-2 duration-150"
+              style={{ position: 'fixed', top: '68px', right: '64px' }}
+            >
+              <button
+                onClick={() => {
+                  setActiveModal('export');
+                  setThreeDotMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl transition-colors text-left cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-[#1DB954]" />
+                <span>Export Scan Data</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveModal('cache');
+                  setThreeDotMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl transition-colors text-left cursor-pointer"
+              >
+                <RefreshCw className="w-4 h-4 text-[#00C2FF]" />
+                <span>Clear Cache</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveModal('report');
+                  setThreeDotMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl transition-colors text-left cursor-pointer"
+              >
+                <Flag className="w-4 h-4 text-[#FF4D5A]" />
+                <span>Report Misclassification</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveModal('doc');
+                  setThreeDotMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#475569] dark:text-[#A7A7A7] hover:text-[#111827] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl transition-colors text-left cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4 text-[#F5B942]" />
+                <span>Documentation</span>
+              </button>
+            </div>,
+            document.body
+          )}
 
         {/* ChatGPT-Style Circular Account Avatar Trigger Button */}
         <button

@@ -1,14 +1,13 @@
 """
 ClarifAI Source Ranking
+=======================
 
-Ranks news candidates before expensive article extraction.
+Ranks evidence sources before expensive extraction.
 """
 
 from urllib.parse import urlparse
 
 
-# Domains that generally provide useful
-# established-news evidence.
 HIGH_VALUE_DOMAINS = {
     "reuters.com",
     "apnews.com",
@@ -20,19 +19,51 @@ HIGH_VALUE_DOMAINS = {
     "theguardian.com",
     "npr.org",
     "aljazeera.com",
+    "hindustantimes.com",
+    "timesofindia.indiatimes.com",
+    "news18.com",
+    "deccanherald.com",
+    "telegraphindia.com",
+    "economictimes.indiatimes.com",
+    "moneycontrol.com",
+    "livemint.com",
+}
+
+LOW_VALUE_DOMAINS = {
+    "facebook.com",
+    "instagram.com",
+    "twitter.com",
+    "x.com",
+    "youtube.com",
+    "tiktok.com",
+    "reddit.com",
 }
 
 
-def get_domain(url):
+def get_domain(url: str) -> str:
     try:
-        return (
-            urlparse(url)
-            .netloc
-            .lower()
-            .replace("www.", "")
-        )
+        hostname = urlparse(str(url or "")).netloc.lower()
+
+        if hostname.startswith("www."):
+            hostname = hostname[4:]
+
+        return hostname
+
     except Exception:
         return ""
+
+
+def _domain_score(domain: str) -> int:
+    if domain in HIGH_VALUE_DOMAINS:
+        return 6
+
+    if domain in LOW_VALUE_DOMAINS:
+        return -3
+
+    if domain:
+        return 1
+
+    return 0
 
 
 def rank_articles(
@@ -40,59 +71,60 @@ def rank_articles(
     limit=5,
 ):
     """
-    Rank current-news candidates.
+    Rank news candidates using:
 
-    Factors:
-    - known news domains
-    - description availability
-    - URL availability
+    1. Publisher reputation
+    2. Article description
+    3. Publication timestamp
+    4. Valid URL
+    5. Available title
     """
+
+    if not isinstance(articles, list):
+        return []
 
     ranked = []
 
-    for article in articles:
+    for index, article in enumerate(articles):
 
-        url = article.get(
-            "url",
-            "",
-        )
+        if not isinstance(article, dict):
+            continue
 
-        domain = get_domain(
-            url
-        )
+        url = str(article.get("url", "") or "").strip()
 
-        score = 0
+        domain = get_domain(url)
 
-        if domain in HIGH_VALUE_DOMAINS:
-            score += 5
+        score = _domain_score(domain)
 
-        if article.get(
-            "description"
-        ):
+        if article.get("title") or article.get("headline"):
             score += 1
 
-        if article.get(
-            "published_at"
-        ):
+        if article.get("description") or article.get("snippet"):
+            score += 1
+
+        if article.get("published_at") or article.get("publication_date"):
             score += 1
 
         if url:
             score += 1
 
         ranked.append(
-            (
-                score,
-                article,
-            )
+            {
+                "score": score,
+                "index": index,
+                "article": article,
+            }
         )
 
     ranked.sort(
-        key=lambda item: item[0],
+        key=lambda item: (
+            item["score"],
+            -item["index"],
+        ),
         reverse=True,
     )
 
     return [
-        article
-        for score, article
-        in ranked[:limit]
+        item["article"]
+        for item in ranked[: max(1, int(limit))]
     ]

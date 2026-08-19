@@ -1,5 +1,13 @@
 """
 ClarifAI Evidence Pipeline
+==========================
+
+Search results are ranked and converted into
+structured evidence.
+
+When a user directly submits an article URL,
+that original article is always preserved as
+primary evidence.
 """
 
 from .source_ranker import rank_articles
@@ -17,14 +25,98 @@ def collect_evidence(
     if not articles:
         return []
 
+    # ========================================================
+    # IDENTIFY USER-SUBMITTED ARTICLE
+    # ========================================================
+
+    original_article = None
+
+    for article in articles:
+
+        if not isinstance(
+            article,
+            dict,
+        ):
+            continue
+
+        if article.get(
+            "input_method"
+        ) == "url":
+
+            original_article = article
+            break
+
+    # ========================================================
+    # RANK SEARCH RESULTS
+    # ========================================================
+
     selected = rank_articles(
         articles,
         limit=max_articles,
     )
 
+    if not isinstance(
+        selected,
+        list,
+    ):
+        selected = []
+
+    # ========================================================
+    # ALWAYS PRESERVE ORIGINAL URL ARTICLE
+    # ========================================================
+
+    if original_article:
+
+        original_url = (
+            str(
+                original_article.get(
+                    "url",
+                    "",
+                )
+            )
+            .rstrip("/")
+            .lower()
+        )
+
+        # Remove duplicate copy.
+        selected = [
+            article
+            for article in selected
+            if str(
+                article.get(
+                    "url",
+                    "",
+                )
+            )
+            .rstrip("/")
+            .lower()
+            != original_url
+        ]
+
+        # Original article always goes first.
+        selected.insert(
+            0,
+            original_article,
+        )
+
+        # Respect requested evidence limit.
+        selected = selected[
+            :max_articles
+        ]
+
+    # ========================================================
+    # EXTRACT EVIDENCE
+    # ========================================================
+
     evidence = []
 
     for article in selected:
+
+        if not isinstance(
+            article,
+            dict,
+        ):
+            continue
 
         extraction = extract_article(
 
@@ -49,10 +141,9 @@ def collect_evidence(
             ),
         )
 
-        # ----------------------------------------------------
-        # If full extraction failed, preserve metadata
-        # as usable limited evidence.
-        # ----------------------------------------------------
+        # ====================================================
+        # EXTRACTION RESULT
+        # ====================================================
 
         content = extraction.get(
             "content",
@@ -64,16 +155,20 @@ def collect_evidence(
             "UNAVAILABLE",
         )
 
+        # ====================================================
+        # HEADLINE/DESCRIPTION FALLBACK
+        # ====================================================
+
         if (
             not content
             and (
                 article.get(
                     "title",
-                    ""
+                    "",
                 )
                 or article.get(
                     "description",
-                    ""
+                    "",
                 )
             )
         ):
@@ -94,6 +189,10 @@ def collect_evidence(
             )
 
             quality = "HEADLINE_ONLY"
+
+        # ====================================================
+        # BUILD EVIDENCE OBJECT
+        # ====================================================
 
         evidence.append(
             {
@@ -175,6 +274,11 @@ def collect_evidence(
                             "",
                         ),
                     )
+                ),
+
+                "input_method": article.get(
+                    "input_method",
+                    "search",
                 ),
 
                 "ml_analysis": None,

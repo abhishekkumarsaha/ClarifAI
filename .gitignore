@@ -13,8 +13,14 @@ env/
 .env.*
 !.env.example
 
-# Streamlit
-.streamlit/secrets.toml
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Python tools
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # IDE
 .vscode/
@@ -27,15 +33,6 @@ Thumbs.db
 # Logs
 *.log
 
-# Test/cache
-.pytest_cache/
-.mypy_cache/
-
-# Vercel
-.vercel/
-
-# Large training datasets
-data/Fake.csv
-data/True.csv
-data/cleaned_news.csv
-data/processed_news.csv
+# Temporary
+*.tmp
+*.temp

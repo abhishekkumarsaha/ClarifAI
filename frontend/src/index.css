@@ -5,7 +5,7 @@
 @layer base {
   html {
     @apply bg-[#F8F9FA] text-[#111827] font-sans antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    font-family: 'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'SF Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
 
   html.dark {
@@ -13,13 +13,60 @@
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    font-family: 'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'SF Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     @apply bg-gradient-to-br from-[#F8F9FA] via-[#F1F3F5] to-[#E9ECEF] dark:from-[#080808] dark:via-[#0D0D0D] dark:to-[#050505] text-[#111827] dark:text-white font-sans antialiased min-h-screen transition-colors duration-300;
   }
 
-  h1, h2, h3, .font-heading {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'SF Pro', 'Helvetica Neue', sans-serif;
     letter-spacing: -0.025em;
+  }
+}
+
+@layer utilities {
+  .font-rounded {
+    font-family: 'SF Pro Rounded', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .font-mono {
+    font-family: 'SF Mono', ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  }
+}
+
+/* ============================================================
+   CRISP NEON COLOR SCROLL (STRICTLY WITHIN LETTER BOUNDARIES - NO GLOW BLUR)
+   ============================================================ */
+
+.headline-neon-wave {
+  position: relative;
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.headline-neon-wave:hover {
+  background: linear-gradient(
+    90deg,
+    #FF007F 0%,
+    #7000FF 20%,
+    #00F0FF 40%,
+    #00FF87 60%,
+    #FFD700 80%,
+    #FF007F 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: neonColorScroll 2.5s linear infinite;
+}
+
+@keyframes neonColorScroll {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 300% center;
   }
 }
 
@@ -27,7 +74,6 @@
    CINEMATIC 3D LIQUID INTELLIGENCE ATMOSPHERE & MOTION
    ============================================================ */
 
-/* Atmospheric Ambient Glowing Light Volumes */
 .cinematic-glow-cyan {
   position: absolute;
   width: 500px;
@@ -60,7 +106,7 @@
   }
 }
 
-/* ON AIR FLOATING INSTRUMENT TILE (With Inset Liquid Specular Shadows) */
+/* ON AIR FLOATING INSTRUMENT TILE */
 .glass-on-air {
   @apply relative overflow-hidden bg-white/95 dark:bg-[#141414]/95 backdrop-blur-2xl border border-black/15 dark:border-white/20 rounded-3xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer;
   box-shadow: 
@@ -91,7 +137,7 @@
   @apply scale-[0.98] translate-y-0;
 }
 
-/* CONTENT GLASS (Cards, Results, Help Pipeline) */
+/* CONTENT GLASS */
 .glass-content {
   @apply relative overflow-hidden bg-white/95 dark:bg-[#141414]/95 backdrop-blur-xl border border-black/15 dark:border-white/20 rounded-3xl transition-all duration-300;
   box-shadow: 
@@ -145,10 +191,7 @@ input[type="range"].glass-slider::-webkit-slider-thumb {
     inset 1px 1px 1px rgba(255,255,255,0.8);
 }
 
-/* ============================================================
-   HELP MODULE EXCLUSIVE TEXT SHIMMER & ISOLATED HOVER
-   ============================================================ */
-
+/* HELP MODULE SHIMMER */
 .help-card-static {
   @apply relative overflow-hidden bg-white/95 dark:bg-[#141414]/95 backdrop-blur-xl border border-black/15 dark:border-white/20 shadow-md rounded-2xl transition-all duration-300;
 }
@@ -161,7 +204,6 @@ input[type="range"].glass-slider::-webkit-slider-thumb {
   @apply border-[#1DB954]/70 dark:border-[#1DB954]/70 -translate-y-1 shadow-xl;
 }
 
-/* Text Shimmer Effect - ONLY triggered on the specific hovered card */
 .help-card-interactive:hover .help-text-shine {
   background: linear-gradient(90deg, #111827 0%, #1DB954 50%, #111827 100%);
   background-size: 200% auto;
@@ -187,7 +229,6 @@ input[type="range"].glass-slider::-webkit-slider-thumb {
   }
 }
 
-/* High Contrast Text Hierarchy */
 .text-primary {
   @apply text-[#111827] dark:text-white font-bold;
 }
@@ -198,21 +239,6 @@ input[type="range"].glass-slider::-webkit-slider-thumb {
 
 .text-muted {
   @apply text-[#64748B] dark:text-[#666666];
-}
-
-/* Print Optimization */
-@media print {
-  aside, header, footer, button, .no-print {
-    display: none !important;
-  }
-  main {
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  .print-area {
-    display: block !important;
-  }
 }
 
 /* Custom Scrollbar */

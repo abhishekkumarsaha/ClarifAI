@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { useApp } from './context/AppContext';
 import { TopBar } from './components/TopBar/TopBar';
-import { SystemStatusTicker } from './components/SystemTicker/SystemTicker';
 import { BottomDock } from './components/Dock/Dock';
 import { AccountPopover } from './components/AccountPopover/AccountPopover';
 import { Modals } from './components/Modals/Modals';
@@ -17,18 +16,15 @@ export const MainContent: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-transparent text-[#111827] dark:text-white h-screen overflow-y-auto relative">
-      {/* Background Cinematic Ambient Lighting Mist */}
+      {/* Background Ambient Lighting */}
       <div className="cinematic-glow-cyan top-[-100px] left-[-100px]" />
       <div className="cinematic-glow-emerald top-[300px] right-[-100px]" />
 
-      {/* Top Floating Header with Brand Logo & Account Trigger */}
+      {/* Top Floating Header with Embedded Telemetry & Account Trigger */}
       <TopBar />
 
-      {/* Kinetic Creative Telemetry Ticker (Inspired by aio.engineer) */}
-      <SystemStatusTicker />
-
       {/* Primary Workspace Content */}
-      <main className="flex-1 p-6 md:p-10 max-w-5xl w-full mx-auto pb-32 relative z-10">
+      <main className="flex-1 p-6 md:p-10 max-w-4xl w-full mx-auto pb-32 relative z-10">
         {activeNav === 'verify' && <VerifyPage />}
         {activeNav === 'history' && <HistoryPage />}
         {activeNav === 'settings' && <SettingsPage />}
@@ -43,10 +39,10 @@ export const MainContent: React.FC = () => {
         </div>
       </footer>
 
-      {/* Floating Bottom Liquid Glass Navigation Dock */}
+      {/* Floating Bottom Navigation Dock */}
       <BottomDock />
 
-      {/* Top-Level Independent Account Popover Overlay */}
+      {/* Account Popover Overlay */}
       <AccountPopover />
 
       {/* Toast Notification Container */}

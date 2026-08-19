@@ -1,222 +1,296 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
 import {
-  BookOpen,
-  HelpCircle,
-  Shield,
-  ChevronDown,
-  ChevronUp,
-  Cpu,
+  ShieldCheck,
+  BrainCircuit,
+  Newspaper,
   Search,
-  Sparkles,
-  Layers,
-  FileCheck,
+  Database,
+  Cpu,
+  Globe,
   CheckCircle2,
-  Info,
+  ExternalLink,
+  Github,
+  Activity,
 } from 'lucide-react';
 
+import { useApp } from '../context/AppContext';
+import { playGlassClickSound } from '../utils/audio';
+
 export const AboutPage: React.FC = () => {
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
+  const { setActiveNav, health } = useApp();
 
-  const toggleFaq = (index: number) => {
-    setExpandedFaq(expandedFaq === index ? null : index);
-  };
-
-  const steps = [
-    {
-      num: '01',
-      title: 'Claim Analysis & Query Generation',
-      icon: Search,
-      color: 'text-[#00C2FF]',
-      bgColor: 'bg-[#00C2FF]/10',
-      borderColor: 'border-[#00C2FF]/30',
-      desc: 'ClarifAI parses the claim, extracts core entities, removes stop words, and constructs focused search queries.',
-    },
-    {
-      num: '02',
-      title: 'Live News Retrieval',
-      icon: Layers,
-      color: 'text-[#1DB954]',
-      bgColor: 'bg-[#1DB954]/10',
-      borderColor: 'border-[#1DB954]/30',
-      desc: 'Queries live news indexes from Currents API to retrieve recent published reports from verified news publishers.',
-    },
-    {
-      num: '03',
-      title: 'Evidence Extraction',
-      icon: FileCheck,
-      color: 'text-[#F5B942]',
-      bgColor: 'bg-[#F5B942]/10',
-      borderColor: 'border-[#F5B942]/30',
-      desc: 'Article bodies are scraped and extracted to identify specific findings supporting or contradicting the claim.',
-    },
-    {
-      num: '04',
-      title: 'Machine Learning Classification',
-      icon: Cpu,
-      color: 'text-[#00C2FF]',
-      bgColor: 'bg-[#00C2FF]/10',
-      borderColor: 'border-[#00C2FF]/30',
-      desc: 'A calibrated Linear SVM model evaluates TF-IDF structural token frequencies to score linguistic patterns.',
-    },
-    {
-      num: '05',
-      title: 'AI Explanation Synthesis',
-      icon: Sparkles,
-      color: 'text-[#1DB954]',
-      bgColor: 'bg-[#1DB954]/10',
-      borderColor: 'border-[#1DB954]/30',
-      desc: 'An LLM synthesizes evidence articles, ML signals, and source consensus into a transparent natural-language explanation.',
-    },
-    {
-      num: '06',
-      title: 'Final Verification Result',
-      icon: CheckCircle2,
-      color: 'text-[#FF4D5A]',
-      bgColor: 'bg-[#FF4D5A]/10',
-      borderColor: 'border-[#FF4D5A]/30',
-      desc: 'Renders the final verdict (Likely True, Likely False, Unverified), confidence score, evidence cards, and receipts.',
-    },
-  ];
-
-  const faqs = [
-    {
-      q: 'What does LIKELY TRUE / LIKELY FALSE mean?',
-      a: 'Verdicts represent the synthesis of published news evidence and linguistic pattern analysis. Likely True indicates high source agreement supporting the claim, while Likely False indicates clear source contradiction.',
-    },
-    {
-      q: 'Why does a claim return UNVERIFIED?',
-      a: 'UNVERIFIED means that insufficient recent published news articles were found in live indexes to confirm or refute the claim.',
-    },
-    {
-      q: 'Is ClarifAI machine learning model factual authority?',
-      a: 'No. Model predictions are analytical tools that describe structural TF-IDF linguistic patterns. They assist human research and are not absolute factual proof.',
-    },
-    {
-      q: 'How does live news search protect API keys?',
-      a: 'All news search requests pass through the secure Python FastAPI backend. Secrets like CURRENTS_API_KEY remain safely stored on the server and are never exposed to browser client code.',
-    },
-  ];
+  const backendOnline = health.status === 'healthy';
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#111827] dark:text-white mb-2">
-          Help & Documentation
+    <div className="space-y-6 animate-in fade-in duration-200">
+
+      {/* HEADER */}
+
+      <div className="text-center max-w-2xl mx-auto">
+
+        <div className="w-16 h-16 mx-auto rounded-3xl bg-[#00C2FF]/10 border border-[#00C2FF]/30 flex items-center justify-center shadow-lg">
+          <ShieldCheck className="w-8 h-8 text-[#00C2FF]" />
+        </div>
+
+        <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-[#00C2FF]">
+          ClarifAI Intelligence System
+        </div>
+
+        <h1 className="mt-2 text-4xl font-black tracking-tight text-[#111827] dark:text-white">
+          About ClarifAI
         </h1>
-        <p className="text-base text-[#475569] dark:text-[#A7A7A7] max-w-2xl leading-relaxed">
-          Learn about ClarifAI's mission, verification architecture, FAQs, and safety disclosures.
+
+        <p className="mt-3 text-sm leading-relaxed text-[#475569] dark:text-[#A7A7A7]">
+          An evidence-driven news verification platform designed
+          to help users evaluate claims using live news evidence,
+          article extraction, ML analysis, and AI-generated
+          explanations.
         </p>
+
       </div>
 
-      {/* SECTION 1: ABOUT CLARIFAI (TEXT SHIMMER & ISOLATED HOVER) */}
-      <div className="p-6 help-card-interactive space-y-3 shadow-xl border border-black/15 dark:border-white/20">
-        <div className="text-lg font-bold text-[#111827] dark:text-white flex items-center gap-2">
-          <Info className="w-5 h-5 text-[#00C2FF]" />
-          <span className="help-text-shine">About ClarifAI</span>
+      {/* STATUS */}
+
+      <div className="max-w-3xl mx-auto p-4 glass-on-air rounded-3xl border border-black/15 dark:border-white/20 shadow-xl">
+
+        <div className="flex items-center justify-between gap-4">
+
+          <div className="flex items-center gap-3">
+
+            <div className="w-10 h-10 rounded-2xl bg-[#1DB954]/10 border border-[#1DB954]/30 flex items-center justify-center">
+              <Activity className="w-5 h-5 text-[#1DB954]" />
+            </div>
+
+            <div>
+              <div className="text-sm font-bold text-[#111827] dark:text-white">
+                System Status
+              </div>
+
+              <div className="text-[10px] text-[#64748B] dark:text-[#777777]">
+                ClarifAI verification infrastructure
+              </div>
+            </div>
+
+          </div>
+
+          <div
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-black ${backendOnline
+                ? 'text-[#1DB954] bg-[#1DB954]/10 border-[#1DB954]/30'
+                : 'text-[#F5B942] bg-[#F5B942]/10 border-[#F5B942]/30'
+              }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${backendOnline
+                  ? 'bg-[#1DB954] animate-pulse'
+                  : 'bg-[#F5B942]'
+                }`}
+            />
+
+            {backendOnline ? 'ONLINE' : 'DEGRADED'}
+          </div>
+
         </div>
-        <p className="text-sm text-[#475569] dark:text-[#A7A7A7] leading-relaxed">
-          ClarifAI is an analytical news verification engine designed to evaluate digital claims by searching live news coverage, assessing linguistic patterns with a calibrated Linear SVM model, and synthesizing transparent evidence summaries with AI.
-        </p>
+
       </div>
 
-      {/* SECTION 2: HOW CLARIFAI WORKS (6-STEP PIPELINE WITH ISOLATED TEXT SHIMMER) */}
-      <div className="space-y-4">
-        <div className="text-lg font-bold text-[#111827] dark:text-white flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-[#1DB954]" />
-          <span>How ClarifAI Verifies a Claim (6-Step Pipeline)</span>
+      {/* ARCHITECTURE */}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <div className="p-5 glass-on-air rounded-3xl border border-black/15 dark:border-white/20 shadow-xl">
+
+          <div className="w-10 h-10 rounded-2xl bg-[#00C2FF]/10 border border-[#00C2FF]/25 flex items-center justify-center">
+            <Search className="w-5 h-5 text-[#00C2FF]" />
+          </div>
+
+          <h2 className="mt-4 text-base font-bold text-[#111827] dark:text-white">
+            Claim Verification
+          </h2>
+
+          <p className="mt-2 text-xs leading-relaxed text-[#64748B] dark:text-[#888888]">
+            Natural-language claims and direct article URLs are
+            processed through the ClarifAI verification pipeline.
+          </p>
+
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {steps.map((step, idx) => {
-            const Icon = step.icon;
+        <div className="p-5 glass-on-air rounded-3xl border border-black/15 dark:border-white/20 shadow-xl">
+
+          <div className="w-10 h-10 rounded-2xl bg-[#1DB954]/10 border border-[#1DB954]/25 flex items-center justify-center">
+            <Newspaper className="w-5 h-5 text-[#1DB954]" />
+          </div>
+
+          <h2 className="mt-4 text-base font-bold text-[#111827] dark:text-white">
+            Live News Evidence
+          </h2>
+
+          <p className="mt-2 text-xs leading-relaxed text-[#64748B] dark:text-[#888888]">
+            Current news sources are discovered and ranked before
+            article evidence is extracted and analyzed.
+          </p>
+
+        </div>
+
+        <div className="p-5 glass-on-air rounded-3xl border border-black/15 dark:border-white/20 shadow-xl">
+
+          <div className="w-10 h-10 rounded-2xl bg-[#F5B942]/10 border border-[#F5B942]/25 flex items-center justify-center">
+            <BrainCircuit className="w-5 h-5 text-[#F5B942]" />
+          </div>
+
+          <h2 className="mt-4 text-base font-bold text-[#111827] dark:text-white">
+            ML + AI Analysis
+          </h2>
+
+          <p className="mt-2 text-xs leading-relaxed text-[#64748B] dark:text-[#888888]">
+            Extracted evidence can be evaluated using the ML
+            layer and synthesized into an evidence-grounded
+            explanation.
+          </p>
+
+        </div>
+
+        <div className="p-5 glass-on-air rounded-3xl border border-black/15 dark:border-white/20 shadow-xl">
+
+          <div className="w-10 h-10 rounded-2xl bg-[#FF4D5A]/10 border border-[#FF4D5A]/25 flex items-center justify-center">
+            <Database className="w-5 h-5 text-[#FF4D5A]" />
+          </div>
+
+          <h2 className="mt-4 text-base font-bold text-[#111827] dark:text-white">
+            Evidence Preservation
+          </h2>
+
+          <p className="mt-2 text-xs leading-relaxed text-[#64748B] dark:text-[#888888]">
+            Verification results preserve source information,
+            evidence summaries, confidence, and analysis history
+            for later review.
+          </p>
+
+        </div>
+
+      </div>
+
+      {/* PIPELINE */}
+
+      <section className="p-5 glass-on-air rounded-3xl border border-black/15 dark:border-white/20 shadow-xl">
+
+        <div className="flex items-center gap-2">
+          <Cpu className="w-4 h-4 text-[#00C2FF]" />
+
+          <h2 className="text-sm font-bold text-[#111827] dark:text-white">
+            Verification Pipeline
+          </h2>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 md:grid-cols-5 gap-3">
+
+          {[
+            ['01', 'Claim', Search],
+            ['02', 'News Search', Newspaper],
+            ['03', 'Extraction', Globe],
+            ['04', 'ML Analysis', BrainCircuit],
+            ['05', 'Verdict', CheckCircle2],
+          ].map(([number, label, Icon]) => {
+
+            const PipelineIcon =
+              Icon as React.FC<{
+                className?: string;
+              }>;
 
             return (
               <div
-                key={idx}
-                className="p-5 help-card-interactive space-y-3 border border-black/15 dark:border-white/20"
+                key={number as string}
+                className="relative p-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10"
               >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`w-8 h-8 rounded-xl ${step.bgColor} ${step.color} font-black text-sm flex items-center justify-center border ${step.borderColor}`}
-                  >
-                    {step.num}
-                  </span>
-                  <Icon className={`w-5 h-5 ${step.color}`} />
+
+                <div className="text-[9px] font-black text-[#00C2FF]">
+                  {number as string}
                 </div>
-                <h4 className="font-bold text-base text-[#111827] dark:text-white help-text-shine transition-colors">
-                  {step.title}
-                </h4>
-                <p className="text-xs text-[#475569] dark:text-[#A7A7A7] leading-relaxed">
-                  {step.desc}
-                </p>
+
+                <PipelineIcon className="w-4 h-4 mt-2 text-[#1DB954]" />
+
+                <div className="mt-2 text-[10px] font-bold text-[#111827] dark:text-white">
+                  {label as string}
+                </div>
+
               </div>
             );
           })}
+
         </div>
+
+      </section>
+
+      {/* SAFETY */}
+
+      <section className="p-5 rounded-3xl bg-[#F5B942]/10 border border-[#F5B942]/25">
+
+        <div className="flex items-start gap-3">
+
+          <ShieldCheck className="w-5 h-5 flex-shrink-0 text-[#F5B942]" />
+
+          <div>
+
+            <h2 className="text-sm font-bold text-[#111827] dark:text-white">
+              Verification Disclaimer
+            </h2>
+
+            <p className="mt-1 text-xs leading-relaxed text-[#475569] dark:text-[#A7A7A7]">
+              ClarifAI provides evidence-based assessments rather
+              than absolute guarantees of truth. A result should
+              be interpreted alongside the cited sources and the
+              available evidence.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ACTIONS */}
+
+      <div className="flex flex-wrap justify-center gap-3">
+
+        <button
+          type="button"
+          onClick={() => {
+            playGlassClickSound();
+            setActiveNav('verify');
+          }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1DB954] text-black text-xs font-bold shadow-md cursor-pointer"
+        >
+          <Search className="w-3.5 h-3.5" />
+          Start Verification
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            playGlassClickSound();
+            setActiveNav('history');
+          }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass-interactive text-xs font-bold text-[#111827] dark:text-white cursor-pointer"
+        >
+          <Database className="w-3.5 h-3.5 text-[#00C2FF]" />
+          View History
+        </button>
+
       </div>
 
-      {/* SECTION 3: FREQUENTLY ASKED QUESTIONS (INTERACTIVE ACCORDIONS WITH ISOLATED TEXT SHIMMER) */}
-      <div className="space-y-4">
-        <div className="text-lg font-bold text-[#111827] dark:text-white flex items-center gap-2">
-          <HelpCircle className="w-5 h-5 text-[#F5B942]" />
-          <span>Frequently Asked Questions</span>
+      {/* FOOTER */}
+
+      <div className="text-center pt-3 pb-4">
+
+        <div className="flex items-center justify-center gap-2 text-[10px] text-[#64748B] dark:text-[#666666]">
+          <span>ClarifAI</span>
+          <span>•</span>
+          <span>News Verification System</span>
+          <span>•</span>
+          <span>v{health.version || '1.0.0'}</span>
         </div>
 
-        <div className="space-y-3">
-          {faqs.map((faq, idx) => {
-            const isOpen = expandedFaq === idx;
-
-            return (
-              <div
-                key={idx}
-                className="help-card-interactive rounded-2xl overflow-hidden shadow-sm border border-black/15 dark:border-white/20"
-              >
-                <button
-                  onClick={() => toggleFaq(idx)}
-                  className="w-full p-4 flex items-center justify-between text-left font-bold text-sm text-[#111827] dark:text-white focus:outline-none hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  <span className="help-text-shine">{faq.q}</span>
-                  {isOpen ? (
-                    <ChevronUp className="w-4 h-4 text-[#1DB954] flex-shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-[#475569] dark:text-[#A7A7A7] flex-shrink-0" />
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="px-4 pb-4 text-xs text-[#475569] dark:text-[#A7A7A7] leading-relaxed border-t border-black/10 dark:border-white/10 pt-3"
-                    >
-                      {faq.a}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </div>
       </div>
 
-      {/* SECTION 4: PRIVACY & EDITORIAL DISCLOSURES (TEXT SHIMMER & ISOLATED HOVER) */}
-      <div className="p-6 help-card-interactive space-y-3 text-xs text-[#475569] dark:text-[#A7A7A7] shadow-xl border border-black/15 dark:border-white/20">
-        <div className="text-sm font-bold text-[#111827] dark:text-white flex items-center gap-2 mb-2">
-          <Shield className="w-4 h-4 text-[#FF4D5A]" />
-          <span className="help-text-shine">Safety Disclosures & Privacy</span>
-        </div>
-        <ul className="space-y-2 list-disc pl-4">
-          <li>ClarifAI queries published news coverage from verified online indexes.</li>
-          <li>Extracted article findings are summarized to provide transparent evidence alignment.</li>
-          <li>Machine Learning predictions are based on linguistic pattern frequencies.</li>
-          <li>ClarifAI does not store user passwords or sensitive credentials on the browser.</li>
-        </ul>
-      </div>
     </div>
   );
 };
