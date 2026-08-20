@@ -5,7 +5,8 @@ import {
 } from '../types';
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://clarifai-v6rr.onrender.com';
 
 const NEWS_CACHE_KEY = 'clarifai_cached_news_v2';
 const ONE_HOUR_MS = 60 * 60 * 1000;
