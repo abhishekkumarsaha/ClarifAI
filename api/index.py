@@ -16,8 +16,8 @@ from src.news_search import get_latest_news
 
 app = FastAPI(
     title="ClarifAI API",
-    description="AI-assisted news verification API",
     version="1.0.0",
+    description="AI-assisted news verification API",
 )
 
 
@@ -26,18 +26,25 @@ app = FastAPI(
 # ============================================================
 
 default_origins = [
+    # Local Vite
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
+
+    # Production frontend
+    "https://clarifai-frontend.vercel.app",
 ]
 
-frontend_url = os.getenv("FRONTEND_URL", "").strip()
+production_origins = os.getenv(
+    "FRONTEND_URL",
+    "https://clarifai-frontend.vercel.app",
+).strip()
 
 allowed_origins = default_origins.copy()
 
-if frontend_url:
-    for origin in frontend_url.split(","):
+if production_origins:
+    for origin in production_origins.split(","):
         origin = origin.strip()
 
         if origin and origin not in allowed_origins:
@@ -58,6 +65,7 @@ app.add_middleware(
 # ============================================================
 
 class AnalyzeRequest(BaseModel):
+
     claim: str = Field(
         ...,
         min_length=3,
@@ -79,6 +87,7 @@ class AnalyzeRequest(BaseModel):
 
 @app.get("/")
 def root() -> dict[str, Any]:
+
     return {
         "name": "ClarifAI",
         "service": "News Verification API",
@@ -87,12 +96,9 @@ def root() -> dict[str, Any]:
     }
 
 
-# ============================================================
-# API ROOT
-# ============================================================
-
 @app.get("/api")
 def api_root() -> dict[str, Any]:
+
     return {
         "name": "ClarifAI",
         "service": "News Verification API",
@@ -107,11 +113,13 @@ def api_root() -> dict[str, Any]:
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+
     return backend_health()
 
 
 @app.get("/api/health")
 def api_health() -> dict[str, Any]:
+
     return backend_health()
 
 
@@ -123,6 +131,7 @@ def api_health() -> dict[str, Any]:
 def news() -> dict[str, Any]:
 
     try:
+
         articles = get_latest_news(
             limit=6,
         )
@@ -152,7 +161,7 @@ def news() -> dict[str, Any]:
 
 
 # ============================================================
-# ANALYZE / VERIFY
+# ANALYZE
 # ============================================================
 
 @app.post("/api/analyze")
@@ -163,6 +172,7 @@ def analyze(
     claim = request.claim.strip()
 
     if not claim:
+
         raise HTTPException(
             status_code=400,
             detail="Claim cannot be empty.",
@@ -202,7 +212,6 @@ def analyze(
         if (
             "429" in error_text
             or "rate limit" in error_text.lower()
-            or "quota" in error_text.lower()
         ):
 
             raise HTTPException(
@@ -219,6 +228,10 @@ def analyze(
         )
 
 
+# ============================================================
+# VERIFY ALIAS
+# ============================================================
+
 @app.post("/api/verify")
 def verify(
     request: AnalyzeRequest,
@@ -228,10 +241,16 @@ def verify(
 
 
 # ============================================================
-# VERCEL ENTRYPOINT
+# OPTIONS / CORS TEST
 # ============================================================
 
-handler = app
+@app.options("/{path:path}")
+def cors_preflight(path: str):
+
+    return {
+        "status": "ok",
+        "path": path,
+    }
 
 
 # ============================================================
