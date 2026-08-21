@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,10 +10,14 @@ from src.health import backend_health
 from src.news_search import get_latest_news
 
 
+# ============================================================
+# APPLICATION
+# ============================================================
+
 app = FastAPI(
     title="ClarifAI API",
-    version="1.0.0",
     description="AI-assisted news verification API",
+    version="1.0.0",
 )
 
 
@@ -23,17 +28,16 @@ app = FastAPI(
 default_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
-production_origins = os.getenv(
-    "FRONTEND_URL",
-    "",
-).strip()
+frontend_url = os.getenv("FRONTEND_URL", "").strip()
 
 allowed_origins = default_origins.copy()
 
-if production_origins:
-    for origin in production_origins.split(","):
+if frontend_url:
+    for origin in frontend_url.split(","):
         origin = origin.strip()
 
         if origin and origin not in allowed_origins:
@@ -54,17 +58,18 @@ app.add_middleware(
 # ============================================================
 
 class AnalyzeRequest(BaseModel):
-
     claim: str = Field(
         ...,
         min_length=3,
         max_length=10000,
+        description="News claim or article URL to verify.",
     )
 
     max_articles: int = Field(
         default=5,
         ge=1,
         le=10,
+        description="Maximum number of evidence articles.",
     )
 
 
@@ -73,8 +78,7 @@ class AnalyzeRequest(BaseModel):
 # ============================================================
 
 @app.get("/")
-def root():
-
+def root() -> dict[str, Any]:
     return {
         "name": "ClarifAI",
         "service": "News Verification API",
@@ -83,9 +87,12 @@ def root():
     }
 
 
-@app.get("/api")
-def api_root():
+# ============================================================
+# API ROOT
+# ============================================================
 
+@app.get("/api")
+def api_root() -> dict[str, Any]:
     return {
         "name": "ClarifAI",
         "service": "News Verification API",
@@ -99,14 +106,12 @@ def api_root():
 # ============================================================
 
 @app.get("/health")
-def health():
-
+def health() -> dict[str, Any]:
     return backend_health()
 
 
 @app.get("/api/health")
-def api_health():
-
+def api_health() -> dict[str, Any]:
     return backend_health()
 
 
@@ -115,10 +120,9 @@ def api_health():
 # ============================================================
 
 @app.get("/api/news")
-def news():
+def news() -> dict[str, Any]:
 
     try:
-
         articles = get_latest_news(
             limit=6,
         )
@@ -148,18 +152,17 @@ def news():
 
 
 # ============================================================
-# ANALYZE
+# ANALYZE / VERIFY
 # ============================================================
 
 @app.post("/api/analyze")
 def analyze(
     request: AnalyzeRequest,
-):
+) -> dict[str, Any]:
 
     claim = request.claim.strip()
 
     if not claim:
-
         raise HTTPException(
             status_code=400,
             detail="Claim cannot be empty.",
@@ -199,7 +202,9 @@ def analyze(
         if (
             "429" in error_text
             or "rate limit" in error_text.lower()
+            or "quota" in error_text.lower()
         ):
+
             raise HTTPException(
                 status_code=429,
                 detail=(
@@ -214,16 +219,19 @@ def analyze(
         )
 
 
-# ============================================================
-# VERIFY ALIAS
-# ============================================================
-
 @app.post("/api/verify")
 def verify(
     request: AnalyzeRequest,
-):
+) -> dict[str, Any]:
 
     return analyze(request)
+
+
+# ============================================================
+# VERCEL ENTRYPOINT
+# ============================================================
+
+handler = app
 
 
 # ============================================================
