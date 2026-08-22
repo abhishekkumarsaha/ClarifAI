@@ -26,21 +26,17 @@ app = FastAPI(
 # ============================================================
 
 default_origins = [
-    # Local Vite
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5175",
     "http://127.0.0.1:5175",
-
-    # Production frontend
     "https://clarifai-frontend.vercel.app",
+    "https://clarifai-frontend20.vercel.app",
 ]
-
 production_origins = os.getenv(
     "FRONTEND_URL",
-    "https://clarifai-frontend.vercel.app",
+    "https://clarifai-frontend20.vercel.app",
 ).strip()
-
 allowed_origins = default_origins.copy()
 
 if production_origins:
