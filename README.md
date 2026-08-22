@@ -1,132 +1,140 @@
-# ClarifAI
+\# ClarifAI
 
-AI-Assisted News Verification Platform
 
-## Live Demo
 
-Frontend:
+\### AI-Assisted News Verification Platform
+
+
+
+ClarifAI is an AI-assisted news verification platform that helps users evaluate news claims by combining live news retrieval, evidence analysis, source evaluation, and AI-generated explanations.
+
+
+
+\---
+
+
+
+\## 🚀 Live Demo
+
+
+
+\### Web Application
+
 https://clarifai-frontend20.vercel.app
 
-## Overview
 
-ClarifAI is an AI-assisted news verification platform designed to help users evaluate news claims by combining live news retrieval, evidence analysis, source evaluation, and AI-generated explanations.
 
-## Features
+\### Backend API
 
-- News claim verification
-- AI-assisted analysis
-- Live news retrieval
-- Evidence-based results
-- Source ranking
-- Verification verdicts
-- Verification history
-- Responsive web interface
-- FastAPI backend
-- React + TypeScript frontend
+https://clarif-ai-alpha.vercel.app
 
-## Tech Stack
 
-### Frontend
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- Framer Motion
 
-### Backend
-- Python
-- FastAPI
-- Uvicorn
+\### GitHub Repository
 
-### AI / Data
-- OpenRouter
-- Currents API
-- Source ranking
-- Evidence pipeline
+https://github.com/abhishekkumarsaha/ClarifAI
 
-### Deployment
-- Vercel
 
-## Architecture
 
-React Frontend
-       ↓
-FastAPI API
-       ↓
-News Retrieval
-       ↓
-Evidence Pipeline
-       ↓
-Source Ranking
-       ↓
-AI Analysis
-       ↓
-Verification Result
+\---
 
-## API
 
-GET /api
-GET /api/health
-GET /api/news
-POST /api/analyze
-POST /api/verify
 
-## Local Development
+\## 📌 Overview
 
-### Backend
 
-Create and activate a Python virtual environment and install:
 
-pip install -r requirements.txt
+The rapid spread of information online makes it difficult to determine whether a news claim is reliable.
 
-Run:
 
-uvicorn api.index:app --reload
 
-### Frontend
+ClarifAI provides an interactive platform where users can submit a news claim and receive an AI-assisted verification result based on retrieved evidence and available news sources.
 
-cd frontend
 
-npm install
 
-npm run dev
+The system combines a React frontend with a FastAPI backend, live news retrieval, evidence processing, source evaluation, and AI-assisted analysis.
 
-## Environment Variables
 
-Frontend:
 
-VITE_API_BASE_URL
+\---
 
-Backend:
 
-CURRENTS_API_KEY
-OPENROUTER_API_KEY
-OPENROUTER_MODEL
-FRONTEND_URL
 
-## Deployment
+\## ✨ Features
 
-Frontend and backend are deployed using Vercel.
 
-## Project Structure
 
-ClarifAI/
-├── api/
-├── src/
-├── frontend/
-├── data/
-├── requirements.txt
-└── README.md
+\- 📰 News claim verification
 
-## Future Improvements
+\- 🤖 AI-assisted claim analysis
 
-- More verification sources
-- Improved evidence aggregation
-- Enhanced source credibility scoring
-- Better historical verification analytics
-- Additional AI models
-- Expanded multilingual support
+\- 🔎 Live news retrieval
 
-## Author
+\- 📚 Evidence-based verification
 
-A.K. Abhishek Kumar Saha
+\- 🌐 Source evaluation
+
+\- ⚖️ Verification verdicts
+
+\- 📊 Verification results and explanations
+
+\- 📱 Responsive web interface
+
+\- ⚡ FastAPI backend
+
+\- ⚛️ React + TypeScript frontend
+
+\- ☁️ Vercel deployment
+
+
+
+\---
+
+
+
+\## 🧠 How ClarifAI Works
+
+
+
+```text
+
+User submits a news claim
+
+&#x20;           ↓
+
+&#x20;     ClarifAI Frontend
+
+&#x20;           ↓
+
+&#x20;      FastAPI Backend
+
+&#x20;           ↓
+
+&#x20;     News Retrieval
+
+&#x20;           ↓
+
+&#x20;     Evidence Pipeline
+
+&#x20;           ↓
+
+&#x20;     Source Evaluation
+
+&#x20;           ↓
+
+&#x20;      AI Analysis
+
+&#x20;           ↓
+
+&#x20;   Verification Result
+
+&#x20;           ↓
+
+&#x20;     User Explanation
+
+👨‍💻 Author
+
+A.K. Abhishek Kumar 
+
+AI \& ML Student and Developer
+
