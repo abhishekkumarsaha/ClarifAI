@@ -3,12 +3,12 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# Virtual environment
+# Virtual environments
 .venv/
 venv/
 env/
 
-# Environment secrets
+# Environment files
 .env
 .env.*
 !.env.example
@@ -16,11 +16,12 @@ env/
 # Vercel
 .vercel/
 
-# Frontend
+# Node
+node_modules/
 frontend/node_modules/
 frontend/dist/
 
-# Python tools
+# Python tooling
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -33,16 +34,7 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs / temporary files
 *.log
-
-# Temporary
 *.tmp
 *.temp
-.vercel
-
-# Node dependencies
-node_modules/
-frontend/node_modules/
-
-.env*
