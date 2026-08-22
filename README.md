@@ -1,58 +1,132 @@
-\# ClarifAI
+# ClarifAI
 
+AI-Assisted News Verification Platform
 
+## Live Demo
 
-ClarifAI is a Machine Learning and Natural Language Processing project designed to classify news articles as Fake or Real.
+Frontend:
+https://clarifai-frontend20.vercel.app
 
+## Overview
 
+ClarifAI is an AI-assisted news verification platform designed to help users evaluate news claims by combining live news retrieval, evidence analysis, source evaluation, and AI-generated explanations.
 
-\## Project Goal
+## Features
 
-Build an end-to-end Fake News Detection system using NLP and Machine Learning.
+- News claim verification
+- AI-assisted analysis
+- Live news retrieval
+- Evidence-based results
+- Source ranking
+- Verification verdicts
+- Verification history
+- Responsive web interface
+- FastAPI backend
+- React + TypeScript frontend
 
+## Tech Stack
 
+### Frontend
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- Framer Motion
 
-\## Planned Workflow
+### Backend
+- Python
+- FastAPI
+- Uvicorn
 
-1\. Dataset collection
+### AI / Data
+- OpenRouter
+- Currents API
+- Source ranking
+- Evidence pipeline
 
-2\. Data cleaning and exploration
+### Deployment
+- Vercel
 
-3\. Text preprocessing using NLP
+## Architecture
 
-4\. Feature extraction
+React Frontend
+       ↓
+FastAPI API
+       ↓
+News Retrieval
+       ↓
+Evidence Pipeline
+       ↓
+Source Ranking
+       ↓
+AI Analysis
+       ↓
+Verification Result
 
-5\. Model training
+## API
 
-6\. Model evaluation
+GET /api
+GET /api/health
+GET /api/news
+POST /api/analyze
+POST /api/verify
 
-7\. Fake/Real news prediction
+## Local Development
 
-8\. User interface
+### Backend
 
-9\. Testing and documentation
+Create and activate a Python virtual environment and install:
 
+pip install -r requirements.txt
 
+Run:
 
-\## Technologies
+uvicorn api.index:app --reload
 
-\- Python
+### Frontend
 
-\- Pandas
+cd frontend
 
-\- NumPy
+npm install
 
-\- Matplotlib
+npm run dev
 
-\- Seaborn
+## Environment Variables
 
-\- NLTK
+Frontend:
 
-\- Scikit-learn
+VITE_API_BASE_URL
 
+Backend:
 
+CURRENTS_API_KEY
+OPENROUTER_API_KEY
+OPENROUTER_MODEL
+FRONTEND_URL
 
-\## Status
+## Deployment
 
-🚧 Under Development
+Frontend and backend are deployed using Vercel.
 
+## Project Structure
+
+ClarifAI/
+├── api/
+├── src/
+├── frontend/
+├── data/
+├── requirements.txt
+└── README.md
+
+## Future Improvements
+
+- More verification sources
+- Improved evidence aggregation
+- Enhanced source credibility scoring
+- Better historical verification analytics
+- Additional AI models
+- Expanded multilingual support
+
+## Author
+
+A.K. Abhishek Kumar Saha
